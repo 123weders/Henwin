@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>профиль • регистрация и вход</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0d1117 0%, #1a1f2b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid #30363d;
+            border-radius: 36px;
+            padding: 32px 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        h1 {
+            font-weight: 500;
+            font-size: 1.9rem;
+            letter-spacing: -0.5px;
+            color: #e6edf3;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 span {
+            background: #2ea043;
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 400;
+            color: #fff;
+        }
+
+        .sub {
+            color: #8b949e;
+            margin-bottom: 28px;
+            font-size: 1rem;
+            border-left: 3px solid #2ea043;
+            padding-left: 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 680px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 24px;
+            padding: 24px 20px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: #3b434d;
+        }
+
+        .card h2 {
+            color: #e6edf3;
+            font-weight: 500;
+            font-size: 1.4rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            font-weight: 400;
+        }
+
+        input {
+            width: 100%;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            padding: 12px 16px;
+            color: #e6edf3;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: #2ea043;
+            box-shadow: 0 0 0 2px rgba(46, 160, 67, 0.3);
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            accent-color: #2ea043;
+            transform: scale(1.1);
+            vertical-align: middle;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            color: #c9d1d9;
+            font-size: 0.95rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        button {
+            width: 100%;
+            background: #2ea043;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        button:hover {
+            background: #3fb950;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .secondary-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+        }
+
+        .secondary-btn:hover {
+            background: #30363d;
+        }
+
+        .user-list {
+            margin-top: 28px;
+            border-top: 1px solid #30363d;
+            padding-top: 20px;
+        }
+
+        .user-list h3 {
+            color: #8b949e;
+            font-weight: 400;
+            font-size: 0.95rem;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 16px;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            color: #c9d1d9;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .user-item:hover {
+            background: #161b22;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .verified-icon {
+            color: #2ea043;
+            font-size: 1.1rem;
+            filter: drop-shadow(0 0 4px rgba(46, 160, 67, 0.6));
+        }
+
+        .user-id {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #21262d;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .current-user {
+            border-left: 4px solid #2ea043;
+        }
+
+        .msg {
+            background: #1f2a1f;
+            border: 1px solid #2ea043;
+            border-radius: 20px;
+            padding: 12px 18px;
+            color: #b7e4b7;
+            font-size: 0.9rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .msg.error {
+            background: #2a1f1f;
+            border-color: #f85149;
+            color: #ffb3b3;
+        }
+
+        .profile-preview {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+            background: #161b22;
+            border-radius: 20px;
+            padding: 14px 18px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            background: #2ea043;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        .preview-info {
+            flex: 1;
+        }
+
+        .preview-name {
+            font-weight: 600;
+            color: #e6edf3;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1.1rem;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid #30363d;
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            color: #8b949e;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .clear-btn:hover {
+            background: #21262d;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            color: #8b949e;
+            font-size: 0.9rem;
+            padding: 12px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <h1>
+        📁 data.json
+        <span>db</span>
+    </h1>
+    <div class="sub">регистрация • вход • верификация</div>
+
+    <!-- Сообщение (успех/ошибка) -->
+    <div id="messageBox" class="msg hidden"></div>
+
+    <!-- Две карточки: регистрация и логин -->
+    <div class="grid">
+        <!-- РЕГИСТРАЦИЯ -->
+        <div class="card">
+            <h2>📝 Регистрация</h2>
+            <div class="input-group">
+                <label>Имя для входа (name)</label>
+                <input type="text" id="regName" placeholder="например: alex" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Отображаемое имя (visual-name)</label>
+                <input type="text" id="regVisual" placeholder="например: Alex_Dev" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="password" id="regPassword" placeholder="••••••••">
+            </div>
+            <div class="input-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="regVerified"> Верифицирован (галочка)
+                </label>
+            </div>
+            <button id="registerBtn">➕ Создать профиль</button>
+        </div>
+
+        <!-- ВХОД -->
+        <div class="card">
+            <h2>🔐 Вход</h2>
+            <div class="input-group">
+                <label>Имя для входа (name)</label>
+                <input type="text" id="loginName" placeholder="ваше name" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button id="loginBtn">🚪 Войти</button>
+            <button id="logoutBtn" class="secondary-btn" style="margin-top: 12px;">🚫 Выйти</button>
+        </div>
+    </div>
+
+    <!-- Текущий пользователь / профиль -->
+    <div id="profilePreview" class="profile-preview hidden">
+        <div class="avatar" id="avatarLetter">A</div>
+        <div class="preview-info">
+            <div class="preview-name" id="previewName">name</div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <span class="user-id" id="previewId">ID: 1</span>
+                <span id="previewVerified" class="verified-icon hidden">✅</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список всех профилей из "базы" -->
+    <div class="user-list">
+        <h3>👥 Все профили (data.json)</h3>
+        <div id="userListContainer">
+            <div class="loading">⏳ Загрузка профилей...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ========== КОНФИГ ==========
+        const STORAGE_KEY = 'profile_json_db';
+        const DATA_FILE = 'data.json';
+
+        // ========== ГЛОБАЛЬНОЕ СОСТОЯНИЕ ==========
+        let db = [];               // массив профилей
+        let currentUser = null;    // { id, name, visualName, verified } или null
+
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
+        function showMessage(text, isError = false) {
+            const box = document.getElementById('messageBox');
+            box.textContent = text;
+            box.classList.remove('hidden', 'error');
+            if (isError) box.classList.add('error');
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Загрузка базы: сначала пробуем data.json, потом localStorage
+        async function loadDB() {
+            // 1. Пробуем загрузить data.json (работает на GitHub Pages)
+            try {
+                const response = await fetch(DATA_FILE, { cache: 'no-cache' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        // Сохраняем локальную копию (на случай офлайна)
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        console.log('✅ data.json загружен:', data.length, 'профилей');
+                        return data;
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ data.json недоступен:', e.message);
+            }
+
+            // 2. Fallback — localStorage
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        console.log('📦 Загружено из localStorage:', parsed.length, 'профилей');
+                        return parsed;
+                    }
+                } catch (e) {
+                    console.warn('Ошибка парсинга localStorage');
+                }
+            }
+
+            // 3. Совсем пусто
+            console.warn('🆕 База пуста');
+            return [];
+        }
+
+        // Сохранить локальную копию
+        function saveDB() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        }
+
+        // Получить следующий ID
+        function getNextId() {
+            if (!db.length) return 1;
+            return Math.max(...db.map(u => Number(u.id) || 0)) + 1;
+        }
+
+        // Экранирование HTML
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // ========== ОТРИСОВКА ==========
+        function renderUserList() {
+            const container = document.getElementById('userListContainer');
+            if (!db.length) {
+                container.innerHTML = '<div style="color:#8b949e; padding: 12px 0;">Нет профилей. Создайте первый!</div>';
+                return;
+            }
+
+            let html = '';
+            db.forEach(user => {
+                const isCurrent = currentUser && currentUser.id === user.id;
+                const verifyIcon = user.verified ? '<span class="verified-icon">✅</span>' : '';
+                html += `
+                    <div class="user-item ${isCurrent ? 'current-user' : ''}">
+                        <div class="user-badge">
+                            <span>${escapeHtml(user.visualName || user.name)}</span>
+                            ${verifyIcon}
+                        </div>
+                        <span class="user-id">ID: ${user.id}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderProfilePreview() {
+            const preview = document.getElementById('profilePreview');
+            if (!currentUser) {
+                preview.classList.add('hidden');
+                return;
+            }
+            preview.classList.remove('hidden');
+
+            const nameSpan = document.getElementById('previewName');
+            const idSpan = document.getElementById('previewId');
+            const verifiedSpan = document.getElementById('previewVerified');
+            const avatar = document.getElementById('avatarLetter');
+
+            const displayName = currentUser.visualName || currentUser.name;
+            nameSpan.textContent = displayName;
+            idSpan.textContent = `ID: ${currentUser.id}`;
+
+            if (currentUser.verified) {
+                verifiedSpan.classList.remove('hidden');
+            } else {
+                verifiedSpan.classList.add('hidden');
+            }
+
+            avatar.textContent = displayName.charAt(0).toUpperCase() || '?';
+        }
+
+        function refreshUI() {
+            renderUserList();
+            renderProfilePreview();
+        }
+
+        // ========== РЕГИСТРАЦИЯ ==========
+        function registerUser() {
+            const nameInput = document.getElementById('regName');
+            const visualInput = document.getElementById('regVisual');
+            const passInput = document.getElementById('regPassword');
+            const verifiedCheck = document.getElementById('regVerified');
+
+            const name = nameInput.value.trim();
+            const visualName = visualInput.value.trim() || name;
+            const password = passInput.value;
+            const verified = verifiedCheck.checked;
+
+            if (!name) {
+                showMessage('Имя для входа (name) не может быть пустым', true);
+                return;
+            }
+            if (!password) {
+                showMessage('Пароль не может быть пустым', true);
+                return;
+            }
+            if (password.length < 3) {
+                showMessage('Пароль должен быть не менее 3 символов', true);
+                return;
+            }
+            if (db.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+                showMessage(`Имя "${name}" уже занято`, true);
+                return;
+            }
+
+            const newId = getNextId();
+            const newUser = {
+                name: name,
+                visualName: visualName,
+                id: newId,
+                password: password,
+                verified: verified
+            };
+
+            db.push(newUser);
+            saveDB();
+            refreshUI();
+
+            nameInput.value = '';
+            visualInput.value = '';
+            passInput.value = '';
+            verifiedCheck.checked = false;
+
+            showMessage(`✅ Профиль "${name}" создан! Теперь можно войти.`);
+        }
+
+        // ========== ВХОД ==========
+        function loginUser() {
+            const nameInput = document.getElementById('loginName');
+            const passInput = document.getElementById('loginPassword');
+
+            const name = nameInput.value.trim();
+            const password = passInput.value;
+
+            if (!name || !password) {
+                showMessage('Заполните имя и пароль', true);
+                return;
+            }
+
+            const user = db.find(u => u.name.toLowerCase() === name.toLowerCase());
+            if (!user) {
+                showMessage(`Пользователь "${name}" не найден`, true);
+                return;
+            }
+            if (user.password !== password) {
+                showMessage('Неверный пароль', true);
+                return;
+            }
+
+            currentUser = {
+                id: user.id,
+                name: user.name,
+                visualName: user.visualName,
+                verified: user.verified
+            };
+
+            nameInput.value = '';
+            passInput.value = '';
+
+            refreshUI();
+            showMessage(`🔓 Добро пожаловать, ${user.visualName || user.name}!`);
+        }
+
+        // ========== ВЫХОД ==========
+        function logoutUser() {
+            if (!currentUser) {
+                showMessage('Вы и так не в системе', true);
+                return;
+            }
+            currentUser = null;
+            refreshUI();
+            showMessage('🚪 Вы вышли из профиля');
+        }
+
+        // ========== СБРОС (только локальной копии) ==========
+        function resetLocalCopy() {
+            if (confirm('Сбросить локальные изменения? Профили из data.json загрузятся заново (добавленные вручную — пропадут).')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        async function init() {
+            // Загружаем базу из data.json
+            db = await loadDB();
+
+            // Навешиваем обработчики
+            document.getElementById('registerBtn').addEventListener('click', registerUser);
+            document.getElementById('loginBtn').addEventListener('click', loginUser);
+            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+
+            // Кнопка сброса локальной копии
+            const resetBtn = document.createElement('button');
+            resetBtn.textContent = '🔄 Сбросить локальные изменения';
+            resetBtn.className = 'clear-btn';
+            resetBtn.style.marginTop = '16px';
+            resetBtn.style.width = '100%';
+            resetBtn.addEventListener('click', resetLocalCopy);
+            document.querySelector('.user-list').appendChild(resetBtn);
+
+            // Enter для быстрого действия
+            document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginUser();
+            });
+            document.getElementById('regPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') registerUser();
+            });
+
+            // Стартовая отрисовка
+            refreshUI();
+
+            if (db.length === 0) {
+                showMessage('⚠️ data.json пуст или не загрузился. Проверьте файл.', true);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    })();
+</script>
+</body>
+</html>
