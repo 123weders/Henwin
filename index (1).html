@@ -1,0 +1,3641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Наки - Мессенджер</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    transition: background 0.3s ease;
+  }
+  
+  .app {
+    width: 100%; max-width: 420px;
+    height: 90vh; max-height: 820px;
+    background: #fff; border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden; display: flex; flex-direction: column;
+    position: relative;
+    transition: background 0.3s ease;
+  }
+  
+  .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .screen.active { display: flex; }
+  
+  .logo { text-align: center; margin-bottom: 20px; }
+  .logo.padded { padding: 28px 24px 0; }
+  .logo-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 36px; color: #fff; margin-bottom: 14px;
+    box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+  }
+  .logo h1 { font-size: 26px; color: #222; margin-bottom: 6px; }
+  .logo p { color: #888; font-size: 13.5px; }
+  
+  .form-body { padding: 0 24px 24px; overflow-y: auto; flex: 1; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+  .field input {
+    width: 100%; padding: 14px 16px;
+    border: 2px solid #eee; border-radius: 12px;
+    font-size: 16px; outline: none;
+    transition: 0.2s; background: #f9f9f9;
+  }
+  .field input:focus { border-color: #667eea; background: #fff; }
+  
+  .country-row { margin-bottom: 14px; }
+  .country-row label {
+    display: block; font-size: 13px; color: #555;
+    margin-bottom: 6px; font-weight: 600;
+  }
+  .country-select-full {
+    width: 100%; padding: 15px 16px;
+    border: 2px solid #eee; border-radius: 12px;
+    font-size: 15px; outline: none;
+    background: #f9f9f9; cursor: pointer;
+    font-weight: 600; color: #333;
+    transition: 0.2s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+  }
+  .country-select-full:focus { border-color: #667eea; background-color: #fff; }
+  
+  #phoneInput {
+    font-size: 18px !important;
+    padding: 16px !important;
+    letter-spacing: 1px;
+    font-weight: 500;
+    text-align: center;
+  }
+  #phoneInput::placeholder { color: #ccc; letter-spacing: 2px; font-weight: 400; }
+  
+  .btn {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: 0.2s; margin-top: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; box-shadow: 0 8px 20px rgba(102,126,234,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-secondary { background: #f0f0f5; color: #555; }
+  .btn-secondary:hover { background: #e5e5ec; }
+  
+  .avatar-section { margin-bottom: 20px; }
+  .avatar-section h3 { font-size: 14px; color: #555; margin-bottom: 12px; font-weight: 600; }
+  .avatar-preview {
+    width: 100px; height: 100px; border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f0f0f5; border: 4px solid #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden;
+  }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-preview .emoji-av { font-size: 54px; }
+  
+  .avatar-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 8px; margin-bottom: 12px;
+  }
+  .avatar-option {
+    aspect-ratio: 1; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer;
+    background: #f0f0f5; border: 3px solid transparent;
+    transition: 0.2s;
+  }
+  .avatar-option:hover { transform: scale(1.1); }
+  .avatar-option.selected { border-color: #667eea; background: #eef0ff; }
+  
+  .upload-btn {
+    display: block; text-align: center; padding: 10px;
+    background: #f0f0f5; border-radius: 10px; cursor: pointer;
+    font-size: 14px; color: #667eea; font-weight: 600;
+  }
+  .upload-btn:hover { background: #e5e5ec; }
+  #fileInput, #settingsFileInput { display: none; }
+  
+  .main-header {
+    display: flex; align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px; background: #fff; flex-shrink: 0; z-index: 2;
+  }
+  .main-header .avatar-mini {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; background: #f0f0f5; overflow: hidden; flex-shrink: 0;
+  }
+  .main-header .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+  .main-header .user-info { flex: 1; min-width: 0; }
+  .main-header .user-info h3 { font-size: 16px; color: #222; }
+  .main-header .user-info p { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn {
+    background: none; border: none; font-size: 20px;
+    cursor: pointer; padding: 8px; border-radius: 10px;
+    transition: 0.2s;
+  }
+  .icon-btn:hover { background: #f0f0f5; }
+  
+  .settings-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    z-index: 50;
+    display: flex; flex-direction: column;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease, background 0.3s ease;
+    border-radius: 24px;
+  }
+  .settings-panel.show { transform: translateY(0); }
+  .settings-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+  }
+  .settings-header h3 { font-size: 18px; color: #222; }
+  .settings-body {
+    flex: 1; overflow-y: auto;
+    padding: 20px 24px 24px;
+  }
+  
+  .tabs {
+    display: flex; padding: 0 20px; background: #fff;
+    border-bottom: 1px solid #f0f0f0; flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1; padding: 12px 8px; text-align: center;
+    font-size: 13px; font-weight: 600; color: #888;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    transition: 0.2s;
+    white-space: nowrap;
+  }
+  .tab.active { color: #667eea; border-bottom-color: #667eea; }
+  
+  .chat-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .empty-list { text-align: center; padding: 40px 24px; color: #aaa; }
+  .empty-list .emoji { font-size: 42px; margin-bottom: 12px; }
+  .empty-list p { font-size: 14px; line-height: 1.5; }
+  
+  .chat-item {
+    display: flex; align-items: center;
+    padding: 12px 20px; gap: 12px;
+    cursor: pointer; transition: 0.15s;
+  }
+  .chat-item:hover { background: #f9f9fc; }
+  .chat-item .chat-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; background: #f0f0f5; flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  .chat-item .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-item .chat-avatar .online-dot {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 14px; height: 14px;
+    background: #22c55e;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    animation: onlinePulse 2s ease-in-out infinite;
+  }
+  @keyframes onlinePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+    50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+  }
+  .chat-item .chat-info { flex: 1; min-width: 0; }
+  .chat-item .chat-info h4 {
+    font-size: 15px; color: #222; margin-bottom: 3px;
+    display: flex; align-items: center; gap: 4px;
+    flex-wrap: wrap;
+  }
+  .chat-item .chat-info p {
+    font-size: 13px; color: #888;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chat-item .chat-meta {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 4px; flex-shrink: 0;
+  }
+  .chat-item .chat-time { font-size: 11px; color: #aaa; }
+  .chat-item .unread {
+    background: #667eea; color: #fff;
+    font-size: 11px; font-weight: 700;
+    min-width: 20px; height: 20px; padding: 0 6px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-item.blocked { opacity: 0.6; }
+  
+  .verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #1d9bf0;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(29,155,240,0.4);
+    vertical-align: middle;
+  }
+  .verified-badge::before {
+    content: '✓';
+    font-weight: 900;
+    font-size: 10px;
+    line-height: 1;
+  }
+  .chat-header .verified-badge { width: 18px; height: 18px; }
+  .chat-header .verified-badge::before { font-size: 11px; }
+  
+  .verified-badge-large {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: #1d9bf0;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: 700;
+    margin-left: 6px;
+    box-shadow: 0 2px 6px rgba(29,155,240,0.4);
+    vertical-align: middle;
+  }
+  .verified-badge-large::before {
+    content: '✓';
+    font-weight: 900;
+  }
+  
+  .unverified-badge {
+    font-size: 10px;
+    background: #fef3c7;
+    color: #d97706;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    margin-left: 2px;
+    border: 1px solid #fbbf24;
+  }
+  
+  .chat-header {
+    display: flex; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 10px; background: #fff; flex-shrink: 0;
+  }
+  .chat-header .back-btn {
+    background: none; border: none; font-size: 22px;
+    cursor: pointer; padding: 4px 8px; border-radius: 8px;
+    color: #667eea;
+  }
+  .chat-header .back-btn:hover { background: #f0f0f5; }
+  .chat-header .chat-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; background: #f0f0f5; flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  .chat-header .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-header .chat-avatar .online-dot {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 12px; height: 12px;
+    background: #22c55e;
+    border: 2px solid #fff;
+    border-radius: 50%;
+  }
+  .chat-header .chat-name { flex: 1; min-width: 0; }
+  .chat-header .chat-name h3 {
+    font-size: 15px; color: #222;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .chat-header .chat-name p { font-size: 12px; color: #22c55e; }
+  .chat-header .chat-name p.typing { color: #667eea; }
+  
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 16px 16px 8px;
+    background: #f5f6fb;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative;
+    overflow-x: hidden;
+    transition: background 0.3s ease;
+  }
+  .messages > * {
+    position: relative;
+    z-index: 1;
+  }
+  .msg {
+    max-width: 78%; padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 14.5px; line-height: 1.4;
+    word-wrap: break-word;
+    animation: msgIn 0.2s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg.out {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border-bottom-right-radius: 4px;
+  }
+  .msg.in {
+    align-self: flex-start; background: #fff;
+    color: #222; border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .msg .msg-sender {
+    font-size: 11px;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 3px;
+    opacity: 0.9;
+  }
+  .msg.out .msg-sender { color: rgba(255,255,255,0.8); }
+  .msg .msg-time {
+    font-size: 10px; opacity: 0.7;
+    margin-top: 4px; text-align: right;
+  }
+  .msg.in .msg-time { color: #888; }
+  
+  .msg.sticker {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 56px; line-height: 1;
+  }
+  .msg.sticker .msg-time {
+    font-size: 10px; color: #888;
+    background: rgba(255,255,255,0.7);
+    display: inline-block;
+    padding: 1px 6px; border-radius: 8px;
+    margin-top: 4px;
+  }
+  .msg.sticker.out .msg-time {
+    color: #fff;
+    background: rgba(102,126,234,0.7);
+  }
+  
+  .voice-msg {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 170px;
+    max-width: 230px;
+  }
+  .voice-play-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: 0.2s;
+    padding-left: 2px;
+  }
+  .voice-play-btn:hover { background: rgba(255,255,255,0.5); }
+  .msg.in .voice-play-btn { background: #eef0ff; color: #667eea; padding-left: 2px; }
+  .msg.in .voice-play-btn:hover { background: #dfe3ff; }
+  .voice-wave {
+    flex: 1;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .voice-wave span {
+    width: 3px;
+    background: currentColor;
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+  .msg.in .voice-wave span { background: #667eea; }
+  .voice-time {
+    font-size: 11px;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  
+  .typing-indicator {
+    align-self: flex-start;
+    background: #fff; padding: 12px 16px;
+    border-radius: 18px; border-bottom-left-radius: 4px;
+    display: flex; gap: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .typing-indicator span {
+    width: 7px; height: 7px; background: #bbb;
+    border-radius: 50%; animation: bounce 1.2s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+  
+  .chat-input-area {
+    display: flex; gap: 6px;
+    padding: 12px 16px;
+    border-top: 1px solid #f0f0f0;
+    background: #fff; flex-shrink: 0;
+    align-items: center;
+  }
+  .chat-input-area input {
+    flex: 1; padding: 12px 16px;
+    border: 2px solid #eee;
+    border-radius: 22px; font-size: 15px;
+    outline: none; background: #f9f9f9;
+    transition: 0.2s; min-width: 0;
+  }
+  .chat-input-area input:focus { border-color: #667eea; background: #fff; }
+  .sticker-toggle, .voice-toggle {
+    width: 42px; height: 42px;
+    border: none; border-radius: 50%;
+    background: #f0f0f5; font-size: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; flex-shrink: 0;
+  }
+  .sticker-toggle:hover, .voice-toggle:hover { background: #e5e5ec; }
+  .voice-toggle.recording {
+    background: #ef4444;
+    color: #fff;
+    animation: recPulse 1s ease-in-out infinite;
+  }
+  @keyframes recPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+    50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  }
+  .send-btn {
+    width: 42px; height: 42px;
+    border: none; border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; flex-shrink: 0;
+  }
+  .send-btn:hover { transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.95); }
+  
+  .sticker-panel {
+    display: none;
+    padding: 12px 16px;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sticker-panel.show { display: grid; }
+  .sticker {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; cursor: pointer;
+    border-radius: 12px; transition: 0.15s;
+    background: #f9f9fc;
+  }
+  .sticker:hover { background: #eef0ff; transform: scale(1.1); }
+  .sticker:active { transform: scale(0.95); }
+  
+  .recording-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    padding: 14px 16px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    z-index: 50;
+  }
+  .recording-bar.show { display: flex; }
+  .recording-dot {
+    width: 10px; height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: recDot 1s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes recDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .recording-time {
+    font-size: 15px; font-weight: 600;
+    color: #222; font-variant-numeric: tabular-nums;
+    min-width: 45px;
+  }
+  .recording-hint { flex: 1; font-size: 13px; color: #888; }
+  .recording-cancel, .recording-send {
+    width: 42px; height: 42px;
+    border-radius: 50%; border: none;
+    cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; flex-shrink: 0;
+  }
+  .recording-cancel { background: #f0f0f5; color: #666; }
+  .recording-cancel:hover { background: #e5e5ec; }
+  .recording-send {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+  .recording-send:hover { transform: scale(1.05); }
+  
+  .call-screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(160deg, #2a1a5e 0%, #4a2b8a 50%, #667eea 100%);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: 60px 24px 50px;
+    z-index: 100; color: #fff;
+  }
+  .call-screen.active { display: flex; }
+  .call-screen .call-avatar {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 70px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 8px rgba(255,255,255,0.1), 0 20px 40px rgba(0,0,0,0.3); }
+    50% { box-shadow: 0 0 0 20px rgba(255,255,255,0.05), 0 20px 40px rgba(0,0,0,0.3); }
+  }
+  .call-screen .call-info { text-align: center; }
+  .call-screen .call-info h2 { font-size: 26px; margin-bottom: 8px; }
+  .call-screen .call-info p { font-size: 15px; opacity: 0.8; }
+  .call-timer { font-size: 20px; margin-top: 12px; opacity: 0.9; font-variant-numeric: tabular-nums; }
+  .call-actions { display: flex; gap: 24px; }
+  .call-btn {
+    width: 68px; height: 68px; border-radius: 50%;
+    border: none; font-size: 26px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; color: #fff;
+  }
+  .call-btn:hover { transform: scale(1.08); }
+  .call-btn:active { transform: scale(0.95); }
+  .call-btn.decline, .call-btn.end { background: #ef4444; box-shadow: 0 8px 20px rgba(239,68,68,0.4); }
+  
+  .call-caption {
+    position: absolute; bottom: 140px;
+    left: 24px; right: 24px;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(8px);
+    padding: 14px 18px; border-radius: 16px;
+    text-align: center; font-size: 14.5px;
+    line-height: 1.4; min-height: 50px;
+    display: none;
+  }
+  .call-caption.show { display: block; animation: msgIn 0.2s ease; }
+  
+  .modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px; z-index: 90;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 20px;
+    padding: 24px; width: 100%; max-width: 340px;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  .modal h3 {
+    font-size: 18px; margin-bottom: 8px; color: #222;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .modal p { font-size: 13px; color: #888; margin-bottom: 16px; line-height: 1.5; }
+  .modal .btn { margin-top: 8px; }
+  
+  .selected-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    min-height: 30px;
+  }
+  .member-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #eef0ff;
+    color: #667eea;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .member-chip button {
+    background: none;
+    border: none;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+  }
+  .member-list {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 12px;
+  }
+  .member-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.15s;
+    gap: 10px;
+  }
+  .member-item:hover { background: #f9f9fc; }
+  .member-item.selected { background: #eef0ff; }
+  .member-item .member-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: #f0f0f5;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .member-item .member-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .member-item .member-name {
+    flex: 1;
+    font-size: 14px;
+    color: #222;
+    font-weight: 500;
+  }
+  .member-item .member-phone { font-size: 11px; color: #888; }
+  .member-item .check { font-size: 18px; color: #667eea; }
+  
+  .error {
+    color: #e74c3c; font-size: 13px;
+    margin-top: -8px; margin-bottom: 12px;
+    text-align: center; min-height: 18px;
+  }
+  
+  .loading-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .loading-overlay.show { display: flex; }
+  .loading-spinner {
+    width: 50px; height: 50px;
+    border: 4px solid #eee;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay p { color: #667eea; font-weight: 600; font-size: 15px; }
+  
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #22c55e;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 8px 20px rgba(34,197,94,0.4);
+    z-index: 9999;
+    animation: msgIn 0.3s ease;
+    font-family: inherit;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.error { background: #ef4444; box-shadow: 0 8px 20px rgba(239,68,68,0.4); }
+  
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #f9f9fc;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    gap: 12px;
+    transition: 0.2s;
+  }
+  .toggle-row:hover {
+    background: #f0f0f8;
+    border-color: #ddd;
+  }
+  .toggle-info { flex: 1; min-width: 0; }
+  .toggle-title {
+    font-size: 15px; color: #222;
+    font-weight: 600; margin-bottom: 3px;
+  }
+  .toggle-desc { font-size: 12px; color: #888; line-height: 1.3; }
+  
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 50px; height: 28px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 28px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 22px; width: 22px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .slider {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+  .switch input:checked + .slider:before {
+    transform: translateX(22px);
+  }
+  
+  .adult-warning {
+    font-size: 12px;
+    color: #ef4444;
+    background: #fef2f2;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    line-height: 1.4;
+    animation: msgIn 0.3s ease;
+  }
+  
+  .theme-switcher {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .theme-btn {
+    padding: 14px 6px;
+    border: 2px solid #eee;
+    background: #f9f9fc;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+  }
+  .theme-btn:hover {
+    background: #f0f0f8;
+    border-color: #ddd;
+  }
+  .theme-btn.active {
+    border-color: #667eea;
+    background: #eef0ff;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+  }
+  .theme-icon { font-size: 22px; line-height: 1; }
+  .theme-name { font-size: 12px; color: #555; font-weight: 600; }
+  
+  .bg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .bg-option {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: 0.2s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .bg-option:hover { transform: scale(1.05); }
+  .bg-option.active {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+  }
+  .bg-option.active::after {
+    content: '✓';
+    position: absolute;
+    top: 4px; right: 6px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    background: #667eea;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .bg-option-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    padding: 3px;
+  }
+  
+  .bg-default { background: #f5f6fb; }
+  .bg-gradient-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .bg-gradient-sunset { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); }
+  .bg-gradient-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+  .bg-gradient-pink { background: linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%); }
+  .bg-pattern-dots {
+    background-color: #f5f6fb;
+    background-image: radial-gradient(#c0c0d0 1.5px, transparent 1.5px);
+    background-size: 15px 15px;
+  }
+  .bg-pattern-grid {
+    background-color: #f5f6fb;
+    background-image: 
+      linear-gradient(#e0e0e8 1px, transparent 1px),
+      linear-gradient(90deg, #e0e0e8 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .bg-pattern-waves {
+    background-color: #f5f6fb;
+    background-image: repeating-linear-gradient(
+      45deg, #e8e8f0, #e8e8f0 10px, #f0f0f8 10px, #f0f0f8 20px
+    );
+  }
+  .bg-space { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+  .bg-dark-solid { background: #1a1a2e; }
+  
+  /* АНИМИРОВАННЫЕ ФОНЫ */
+  .bg-anim-stars::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 50% 50%, #fff, transparent),
+      radial-gradient(1px 1px at 80% 10%, #fff, transparent),
+      radial-gradient(2px 2px at 90% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 33% 85%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 15% 75%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 35%, #fff, transparent),
+      radial-gradient(2px 2px at 45% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 85% 80%, #fff, transparent);
+    background-size: 200% 200%;
+    animation: twinkle 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.8;
+  }
+  .bg-anim-stars::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(1px 1px at 10% 20%, #fff, transparent),
+      radial-gradient(2px 2px at 40% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 75% 45%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 25% 55%, #fff, transparent),
+      radial-gradient(1px 1px at 65% 90%, #fff, transparent);
+    background-size: 150% 150%;
+    animation: twinkle 3s ease-in-out infinite reverse;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.4; transform: scale(1) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.05) rotate(2deg); }
+  }
+  
+  .bg-anim-bubbles::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.6) 4%, transparent 5%),
+      radial-gradient(circle at 60% 70%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 6%, transparent 7%),
+      radial-gradient(circle at 40% 20%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.7) 3%, transparent 4%),
+      radial-gradient(circle at 80% 50%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 5%, transparent 6%),
+      radial-gradient(circle at 15% 80%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.6) 4%, transparent 5%);
+    background-size: 100% 100%;
+    animation: bubblesFloat 12s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes bubblesFloat {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+  
+  .bg-anim-rain::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: repeating-linear-gradient(
+      100deg, transparent 0px, transparent 8px,
+      rgba(180, 220, 255, 0.5) 8px, rgba(180, 220, 255, 0.5) 10px,
+      transparent 10px, transparent 50px
+    );
+    animation: rainFall 1s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+  @keyframes rainFall {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 60px; }
+  }
+  
+  .bg-anim-snow::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(3px 3px at 15% 20%, #fff, transparent),
+      radial-gradient(2px 2px at 45% 40%, #fff, transparent),
+      radial-gradient(4px 4px at 75% 15%, #fff, transparent),
+      radial-gradient(2.5px 2.5px at 30% 70%, #fff, transparent),
+      radial-gradient(3px 3px at 65% 85%, #fff, transparent),
+      radial-gradient(2px 2px at 85% 55%, #fff, transparent),
+      radial-gradient(3.5px 3.5px at 10% 90%, #fff, transparent),
+      radial-gradient(2.5px 2.5px at 90% 30%, #fff, transparent);
+    background-size: 200% 200%;
+    animation: snowFall 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.85;
+  }
+  @keyframes snowFall {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100%; }
+  }
+  
+  .bg-anim-gradient {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab) !important;
+    background-size: 400% 400% !important;
+    animation: gradientShift 15s ease infinite !important;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .bg-anim-fireflies::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(3px 3px at 20% 30%, #ffeb3b, transparent),
+      radial-gradient(4px 4px at 50% 60%, #ffd54f, transparent),
+      radial-gradient(3px 3px at 80% 20%, #fff59d, transparent),
+      radial-gradient(5px 5px at 35% 80%, #ffeb3b, transparent),
+      radial-gradient(3px 3px at 70% 40%, #ffe082, transparent),
+      radial-gradient(4px 4px at 15% 70%, #ffd54f, transparent);
+    background-size: 100% 100%;
+    animation: firefliesGlow 5s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(0.5px);
+  }
+  @keyframes firefliesGlow {
+    0% { 
+      opacity: 0.3;
+      transform: translate(0, 0) scale(1);
+      filter: blur(0.5px) hue-rotate(0deg);
+    }
+    50% {
+      opacity: 0.9;
+      transform: translate(5px, -8px) scale(1.1);
+      filter: blur(1px) hue-rotate(20deg);
+    }
+    100% { 
+      opacity: 0.4;
+      transform: translate(-5px, 5px) scale(0.95);
+      filter: blur(0.5px) hue-rotate(-10deg);
+    }
+  }
+  
+  .messages.bg-anim-stars .msg.in,
+  .messages.bg-anim-rain .msg.in,
+  .messages.bg-anim-snow .msg.in,
+  .messages.bg-anim-gradient .msg.in,
+  .messages.bg-anim-fireflies .msg.in {
+    background: rgba(255,255,255,0.95);
+    color: #222;
+  }
+  .messages.bg-anim-stars .msg.in .msg-time,
+  .messages.bg-anim-rain .msg.in .msg-time,
+  .messages.bg-anim-snow .msg.in .msg-time,
+  .messages.bg-anim-gradient .msg.in .msg-time,
+  .messages.bg-anim-fireflies .msg.in .msg-time {
+    color: #666;
+  }
+  .messages.bg-anim-bubbles .msg.in {
+    background: rgba(255,255,255,0.9);
+    color: #222;
+  }
+  
+  .bg-anim-stars-preview {
+    background: linear-gradient(180deg, #0f0c29 0%, #24243e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-anim-stars-preview::before {
+    content: '✨';
+    position: absolute;
+    top: 20%; left: 30%;
+    font-size: 14px;
+    animation: twinkle 2s ease-in-out infinite;
+  }
+  .bg-anim-stars-preview::after {
+    content: '⭐';
+    position: absolute;
+    bottom: 20%; right: 25%;
+    font-size: 12px;
+    animation: twinkle 2.5s ease-in-out infinite reverse;
+  }
+  
+  .bg-anim-bubbles-preview {
+    background: linear-gradient(180deg, #a8edea 0%, #fed6e3 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-anim-bubbles-preview::before {
+    content: '🫧';
+    position: absolute;
+    top: 30%; left: 40%;
+    font-size: 16px;
+    animation: bubblesFloat 4s ease-in-out infinite alternate;
+  }
+  .bg-anim-bubbles-preview::after {
+    content: '🫧';
+    position: absolute;
+    bottom: 30%; right: 40%;
+    font-size: 12px;
+    animation: bubblesFloat 3s ease-in-out infinite alternate-reverse;
+  }
+  
+  .bg-anim-rain-preview {
+    background: linear-gradient(180deg, #3a4a5c 0%, #1a2530 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-anim-rain-preview::before {
+    content: '💧';
+    position: absolute;
+    top: 20%; left: 30%;
+    font-size: 14px;
+    animation: rainDrop 1.5s linear infinite;
+  }
+  .bg-anim-rain-preview::after {
+    content: '💧';
+    position: absolute;
+    top: 40%; right: 30%;
+    font-size: 12px;
+    animation: rainDrop 1.8s linear infinite 0.3s;
+  }
+  @keyframes rainDrop {
+    0% { transform: translateY(-20px); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(30px); opacity: 0; }
+  }
+  
+  .bg-anim-snow-preview {
+    background: linear-gradient(180deg, #2c3e50 0%, #4a6a8a 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-anim-snow-preview::before {
+    content: '❄️';
+    position: absolute;
+    top: 20%; left: 30%;
+    font-size: 12px;
+    animation: snowDrift 3s ease-in-out infinite;
+  }
+  .bg-anim-snow-preview::after {
+    content: '❄️';
+    position: absolute;
+    top: 50%; right: 35%;
+    font-size: 10px;
+    animation: snowDrift 4s ease-in-out infinite 1s;
+  }
+  @keyframes snowDrift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.8; }
+    50% { transform: translate(-5px, 15px) rotate(180deg); opacity: 1; }
+  }
+  
+  .bg-anim-gradient-preview {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradientShift 4s ease infinite;
+    position: relative;
+  }
+  
+  .bg-anim-fireflies-preview {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-anim-fireflies-preview::before {
+    content: '✨';
+    position: absolute;
+    top: 25%; left: 30%;
+    font-size: 14px;
+    animation: firefliesGlow 2s ease-in-out infinite;
+  }
+  .bg-anim-fireflies-preview::after {
+    content: '✨';
+    position: absolute;
+    bottom: 25%; right: 30%;
+    font-size: 12px;
+    animation: firefliesGlow 2.5s ease-in-out infinite reverse;
+  }
+  
+  /* ТЁМНАЯ ТЕМА */
+  body.dark-theme {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  body.dark-theme .app {
+    background: #1a1a2e;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  body.dark-theme .logo h1,
+  body.dark-theme .logo h1[style],
+  body.dark-theme .settings-header h3,
+  body.dark-theme .field label,
+  body.dark-theme .country-row label,
+  body.dark-theme .avatar-section h3,
+  body.dark-theme .toggle-title,
+  body.dark-theme .modal h3,
+  body.dark-theme .main-header .user-info h3,
+  body.dark-theme .chat-header .chat-name h3,
+  body.dark-theme .chat-item .chat-info h4,
+  body.dark-theme .recording-time {
+    color: #e8e8f0 !important;
+  }
+  body.dark-theme .logo p,
+  body.dark-theme .toggle-desc,
+  body.dark-theme .modal p,
+  body.dark-theme .main-header .user-info p,
+  body.dark-theme .chat-item .chat-info p,
+  body.dark-theme .recording-hint {
+    color: #8888a0 !important;
+  }
+  body.dark-theme .field input,
+  body.dark-theme .country-select-full,
+  body.dark-theme .chat-input-area input,
+  body.dark-theme .settings-body input {
+    background: #252540;
+    border-color: #353550;
+    color: #e8e8f0;
+  }
+  body.dark-theme .field input::placeholder,
+  body.dark-theme .country-select-full::placeholder,
+  body.dark-theme .chat-input-area input::placeholder {
+    color: #666680;
+  }
+  body.dark-theme .field input:focus,
+  body.dark-theme .country-select-full:focus,
+  body.dark-theme .chat-input-area input:focus {
+    background: #2a2a45;
+    border-color: #667eea;
+    color: #e8e8f0;
+  }
+  body.dark-theme .main-header,
+  body.dark-theme .chat-header,
+  body.dark-theme .chat-input-area,
+  body.dark-theme .tabs,
+  body.dark-theme .sticker-panel,
+  body.dark-theme .settings-panel,
+  body.dark-theme .recording-bar {
+    background: #1a1a2e;
+    border-color: #2a2a45;
+  }
+  body.dark-theme .settings-header { border-color: #2a2a45; }
+  body.dark-theme .tab { color: #666680; }
+  body.dark-theme .tab.active { color: #8b9eff; border-bottom-color: #8b9eff; }
+  body.dark-theme .icon-btn:hover,
+  body.dark-theme .back-btn:hover,
+  body.dark-theme .sticker-toggle:hover,
+  body.dark-theme .voice-toggle:hover,
+  body.dark-theme .recording-cancel:hover { background: #252540; }
+  body.dark-theme .chat-item:hover { background: #252540; }
+  body.dark-theme .chat-item .chat-avatar,
+  body.dark-theme .main-header .avatar-mini,
+  body.dark-theme .chat-header .chat-avatar,
+  body.dark-theme .avatar-preview,
+  body.dark-theme .avatar-option,
+  body.dark-theme .sticker,
+  body.dark-theme .member-item .member-avatar,
+  body.dark-theme .member-avatar { background: #252540; }
+  body.dark-theme .avatar-option.selected { background: #2a2a55; border-color: #8b9eff; }
+  body.dark-theme .sticker:hover { background: #2a2a55; }
+  body.dark-theme .upload-btn,
+  body.dark-theme .sticker-toggle,
+  body.dark-theme .voice-toggle,
+  body.dark-theme .recording-cancel,
+  body.dark-theme .member-chip { background: #252540; color: #8b9eff; }
+  body.dark-theme .upload-btn:hover,
+  body.dark-theme .sticker-toggle:hover,
+  body.dark-theme .voice-toggle:hover { background: #2a2a55; }
+  body.dark-theme .toggle-row { background: #252540; border-color: #353550; }
+  body.dark-theme .toggle-row:hover { background: #2a2a55; border-color: #454570; }
+  body.dark-theme .modal { background: #1a1a2e; border: 1px solid #2a2a45; }
+  body.dark-theme .member-list { border-color: #353550; background: #1f1f35; }
+  body.dark-theme .member-item:hover,
+  body.dark-theme .member-item.selected { background: #2a2a55; }
+  body.dark-theme .member-item .member-name { color: #e8e8f0; }
+  body.dark-theme .btn-secondary { background: #252540; color: #e8e8f0; }
+  body.dark-theme .btn-secondary:hover { background: #2a2a55; }
+  body.dark-theme .msg.in { background: #252540; color: #e8e8f0; }
+  body.dark-theme .msg.in .msg-time { color: #8888a0; }
+  body.dark-theme .msg.in .voice-play-btn { background: #2a2a55; color: #8b9eff; }
+  body.dark-theme .msg.in .voice-wave span { background: #8b9eff; }
+  body.dark-theme .msg-sender { color: #8b9eff !important; }
+  body.dark-theme .empty-list { color: #666680; }
+  body.dark-theme .settings-body h3 { color: #e8e8f0 !important; }
+  body.dark-theme .error { color: #ff6b6b; }
+  body.dark-theme .theme-btn { background: #252540; border-color: #353550; }
+  body.dark-theme .theme-btn:hover { background: #2a2a55; }
+  body.dark-theme .theme-btn.active { border-color: #8b9eff; background: #2a2a55; }
+  body.dark-theme .theme-name { color: #e8e8f0; }
+  body.dark-theme .bg-option { border-color: #2a2a45; }
+  body.dark-theme .bg-default { background: #202035; }
+  body.dark-theme .bg-pattern-dots {
+    background-color: #202035;
+    background-image: radial-gradient(#3a3a55 1.5px, transparent 1.5px);
+  }
+  body.dark-theme .bg-pattern-grid {
+    background-color: #202035;
+    background-image: 
+      linear-gradient(#3a3a55 1px, transparent 1px),
+      linear-gradient(90deg, #3a3a55 1px, transparent 1px);
+  }
+  body.dark-theme .bg-pattern-waves {
+    background-color: #202035;
+    background-image: repeating-linear-gradient(
+      45deg, #2a2a45, #2a2a45 10px, #252540 10px, #252540 20px
+    );
+  }
+  
+  .screen, .main-header, .chat-header, .chat-input-area, .tabs,
+  .chat-item, .settings-panel, .msg.in, .field input, .country-select-full,
+  .toggle-row, .modal, .member-list, .member-item {
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
+  
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p id="loadingText">Загрузка...</p>
+  </div>
+  
+  <div class="screen active" id="screenPhone">
+    <div class="logo padded">
+      <div class="logo-icon">💬</div>
+      <h1>Наки</h1>
+      <p>Общайся легко и свободно</p>
+    </div>
+    <div class="form-body">
+      <div class="country-row">
+        <label>Страна</label>
+        <select id="countrySelect" class="country-select-full"></select>
+      </div>
+      
+      <div class="field">
+        <label>Номер телефона</label>
+        <input type="tel" id="phoneInput" placeholder="00 000-00-00" autocomplete="off" inputmode="numeric">
+      </div>
+      
+      <div class="error" id="phoneError"></div>
+      <button class="btn btn-primary" onclick="sendCode()">Продолжить</button>
+    </div>
+  </div>
+  
+  <div class="screen" id="screenCode">
+    <div class="logo padded">
+      <div class="logo-icon">🔐</div>
+      <h1>Введите код</h1>
+      <p id="codeHint">Код отправлен на номер</p>
+    </div>
+    <div class="form-body">
+      <div class="field">
+        <label>Код подтверждения</label>
+        <input type="text" id="codeInput" placeholder="0000" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:8px;" autocomplete="off">
+      </div>
+      <div class="error" id="codeError"></div>
+      <button class="btn btn-primary" onclick="verifyCode()">Подтвердить</button>
+      <button class="btn btn-secondary" onclick="showScreen('screenPhone')">Назад</button>
+    </div>
+  </div>
+  
+  <div class="screen" id="screenProfile">
+    <div class="logo padded">
+      <h1 style="font-size:22px;">Создайте профиль</h1>
+      <p>Как вас будут видеть другие</p>
+    </div>
+    <div class="form-body">
+      <div class="avatar-section">
+        <div class="avatar-preview" id="avatarPreview">
+          <span class="emoji-av">😀</span>
+        </div>
+        <h3>Выберите аватар</h3>
+        <div class="avatar-grid" id="avatarGrid"></div>
+        <label class="upload-btn" for="fileInput">📷 Загрузить свою</label>
+        <input type="file" id="fileInput" accept="image/*" onchange="uploadAvatar(event)">
+      </div>
+      <div class="field">
+        <label>Ваше имя</label>
+        <input type="text" id="nameInput" placeholder="Например: Алексей" maxlength="30" autocomplete="off">
+      </div>
+      <div class="error" id="profileError"></div>
+      <button class="btn btn-primary" onclick="saveProfile()">Готово</button>
+    </div>
+  </div>
+  
+  <div class="screen" id="screenMain">
+    <div class="main-header">
+      <div class="avatar-mini" id="mainAvatar" onclick="toggleSettingsPanel()" style="cursor:pointer;">😀</div>
+      <div class="user-info" onclick="toggleSettingsPanel()" style="cursor:pointer;">
+        <h3 id="mainName">Имя</h3>
+        <p id="mainPhone">+375...</p>
+      </div>
+      <button class="icon-btn" onclick="toggleSettingsPanel()" title="Настройки">⚙️</button>
+      <button class="icon-btn" onclick="openAddContact()" title="Написать по номеру">✉️</button>
+      <button class="icon-btn" onclick="openCreateGroup()" title="Создать группу">👥</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="all" onclick="switchTab('all')">Все</div>
+      <div class="tab" data-tab="bots" onclick="switchTab('bots')">ИИ</div>
+      <div class="tab" data-tab="users" onclick="switchTab('users')">Люди</div>
+      <div class="tab" data-tab="groups" onclick="switchTab('groups')">Группы</div>
+    </div>
+    <div class="chat-list" id="chatList"></div>
+  </div>
+  
+  <div class="screen" id="screenChat">
+    <div class="chat-header">
+      <button class="back-btn" onclick="backToMain()">←</button>
+      <div class="chat-avatar" id="chatAvatar" onclick="openPeerProfile()" style="cursor:pointer;">🤖</div>
+      <div class="chat-name" onclick="openPeerProfile()" style="cursor:pointer;">
+        <h3 id="chatTitle">Имя</h3>
+        <p id="chatStatus">онлайн</p>
+      </div>
+      <button class="icon-btn" id="unblockBtn" onclick="quickUnblock()" title="Разблокировать" style="display:none;">✅</button>
+      <button class="icon-btn" id="callBtn" onclick="startCall()" title="Позвонить">📞</button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="sticker-panel" id="stickerPanel"></div>
+    <div class="chat-input-area">
+      <button class="sticker-toggle" onclick="toggleStickers()">😊</button>
+      <button class="voice-toggle" id="voiceBtn" onclick="toggleRecording()" title="Голосовое">🎤</button>
+      <input type="text" id="msgInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
+      <button class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+    <div class="recording-bar" id="recordingBar">
+      <div class="recording-dot"></div>
+      <div class="recording-time" id="recordingTime">0:00</div>
+      <div class="recording-hint">Запись...</div>
+      <button class="recording-cancel" onclick="cancelRecording()" title="Отменить">✕</button>
+      <button class="recording-send" onclick="stopRecordingAndSend()" title="Отправить">➤</button>
+    </div>
+  </div>
+  
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <h3>⚙️ Настройки профиля</h3>
+      <button class="icon-btn" onclick="toggleSettingsPanel()">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="avatar-section">
+        <div class="avatar-preview" id="settingsAvatarPreview">
+          <span class="emoji-av">😀</span>
+        </div>
+        <h3>Аватар</h3>
+        <div class="avatar-grid" id="settingsAvatarGrid"></div>
+        <label class="upload-btn" for="settingsFileInput">📷 Загрузить своё фото</label>
+        <input type="file" id="settingsFileInput" accept="image/*" onchange="settingsUploadAvatar(event)">
+      </div>
+      <div class="field">
+        <label>Ваше имя</label>
+        <input type="text" id="settingsNameInput" placeholder="Ваше имя" maxlength="30" autocomplete="off">
+      </div>
+      
+      <div style="margin-top:20px;margin-bottom:12px;">
+        <h3 style="font-size:14px;color:#555;margin-bottom:10px;font-weight:600;">🌓 Тема оформления</h3>
+        <div class="theme-switcher">
+          <button class="theme-btn" data-theme="light" onclick="setTheme('light')">
+            <span class="theme-icon">☀️</span>
+            <span class="theme-name">Светлая</span>
+          </button>
+          <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+            <span class="theme-icon">🌙</span>
+            <span class="theme-name">Тёмная</span>
+          </button>
+          <button class="theme-btn" data-theme="auto" onclick="setTheme('auto')">
+            <span class="theme-icon">🖥️</span>
+            <span class="theme-name">Авто</span>
+          </button>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px;margin-bottom:12px;">
+        <h3 style="font-size:14px;color:#555;margin-bottom:10px;font-weight:600;">🎨 Фон чата</h3>
+        <div class="bg-grid" id="bgGrid"></div>
+      </div>
+      
+      <div style="margin-top:20px;margin-bottom:12px;">
+        <h3 style="font-size:14px;color:#555;margin-bottom:10px;font-weight:600;">🎛️ Дополнительные боты</h3>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-title">🤬 Нейро-Хам</div>
+            <div class="toggle-desc">Умный как Grok, но матерится (зацензурено). 18+</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="neurohamToggle" onchange="toggleNeuroHam(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="adult-warning" id="adultWarning" style="display:none;">
+          ⚠️ Внимание! Бот использует ненормативную лексику (зацензурено звёздочками). Включай, если не против.
+        </div>
+      </div>
+      
+      <div class="error" id="settingsError"></div>
+      <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:20px;">💾 Сохранить</button>
+      <button class="btn btn-secondary" onclick="logout()">🚪 Выйти из аккаунта</button>
+    </div>
+  </div>
+  
+  <div class="call-screen" id="callScreen">
+    <div class="call-avatar" id="callAvatar">🤖</div>
+    <div class="call-info">
+      <h2 id="callName">Наки ИИ</h2>
+      <p id="callStatus">Вызов...</p>
+      <div class="call-timer" id="callTimer"></div>
+    </div>
+    <div class="call-caption" id="callCaption"></div>
+    <div class="call-actions" id="callActions"></div>
+  </div>
+  
+  <div class="modal-overlay" id="addContactModal">
+    <div class="modal">
+      <h3>💬 Написать по номеру</h3>
+      <p>Введи номер — система найдёт пользователя.</p>
+      <div class="field" style="margin-bottom:12px;">
+        <input type="tel" id="contactPhone" placeholder="+375 29 123-45-67" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <input type="text" id="contactMsg" placeholder="Привет! 👋" autocomplete="off">
+      </div>
+      <div class="error" id="contactError" style="margin-top:0;"></div>
+      <button class="btn btn-primary" onclick="sendByNumber()">Отправить</button>
+      <button class="btn btn-secondary" onclick="closeAddContact()">Отмена</button>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="createGroupModal">
+    <div class="modal">
+      <h3>👥 Создать группу</h3>
+      <p>Максимум 50 участников</p>
+      <div class="field" style="margin-bottom:12px;">
+        <input type="text" id="groupName" placeholder="Название группы" maxlength="50" autocomplete="off">
+      </div>
+      <div style="font-size:13px;color:#555;margin-bottom:8px;font-weight:600;">
+        Участники (<span id="memberCount">0</span>/50)
+      </div>
+      <div class="selected-members" id="selectedMembers"></div>
+      <div class="field" style="margin-bottom:12px;">
+        <input type="tel" id="groupPhoneInput" placeholder="+375 29 123-45-67" autocomplete="off">
+      </div>
+      <button class="btn btn-secondary" style="margin-top:0;padding:10px;font-size:14px;" onclick="addMemberByPhone()">➕ Добавить по номеру</button>
+      <div style="font-size:13px;color:#555;margin-top:16px;margin-bottom:8px;font-weight:600;">
+        Из контактов:
+      </div>
+      <div class="member-list" id="memberList"></div>
+      <div class="error" id="groupError" style="margin-top:8px;"></div>
+      <button class="btn btn-primary" onclick="createGroup()">Создать группу</button>
+      <button class="btn btn-secondary" onclick="closeCreateGroup()">Отмена</button>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="peerProfileModal">
+    <div class="modal" style="text-align:center;">
+      <div style="width:100px;height:100px;border-radius:50%;margin:0 auto 12px;background:#f0f0f5;display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;border:4px solid #fff;box-shadow:0 8px 20px rgba(0,0,0,0.1);" id="peerAvatar">👤</div>
+      <h3 id="peerName" style="font-size:20px;margin-bottom:4px;justify-content:center;">Имя</h3>
+      <p id="peerPhone" style="color:#888;font-size:13px;margin-bottom:20px;">+375...</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-secondary" onclick="renamePeer()" id="peerRenameBtn">✏️ Переименовать</button>
+        <button class="btn btn-secondary" onclick="addPeerToGroup()" id="peerAddGroupBtn">👥 Добавить в группу</button>
+        <button class="btn btn-secondary" id="blockBtn" onclick="toggleBlockPeer()">🚫 Заблокировать</button>
+        <button class="btn btn-primary" onclick="closePeerProfile()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="renamePeerModal">
+    <div class="modal">
+      <h3>✏️ Переименовать контакт</h3>
+      <p>Только для тебя. Другой пользователь не увидит это имя.</p>
+      <div class="field" style="margin-bottom:12px;">
+        <input type="text" id="renamePeerInput" placeholder="Новое имя" maxlength="30" autocomplete="off">
+      </div>
+      <div class="error" id="renamePeerError" style="margin-top:0;"></div>
+      <button class="btn btn-primary" onclick="savePeerRename()">Сохранить</button>
+      <button class="btn btn-secondary" onclick="closeRenamePeer()">Отмена</button>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="addToGroupModal">
+    <div class="modal">
+      <h3>👥 Добавить в группу</h3>
+      <p>Выбери группу, куда добавить этого человека</p>
+      <div class="member-list" id="groupsToAddList" style="max-height:250px;"></div>
+      <div class="error" id="addToGroupError" style="margin-top:8px;"></div>
+      <button class="btn btn-secondary" onclick="closeAddToGroup()">Отмена</button>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+// ⚠️ ЗАМЕНИ НА СВОЙ КОНФИГ ИЗ FIREBASE ⚠️
+const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "naki-messenger.firebaseapp.com",
+  databaseURL: "https://naki-messenger-default-rtdb.firebaseio.com",
+  projectId: "naki-messenger",
+  storageBucket: "naki-messenger.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
+// ⚠️ ЗАМЕНИ НА СВОЙ КОНФИГ ИЗ FIREBASE ⚠️
+
+const DEMO_CODE = "1234";
+const MAX_GROUP_MEMBERS = 50;
+const AVATARS = ["😀","😎","🦊","🐱","🐼","🦁","🐸","🐧","🦄","🐨","👽","🤖","🐯","🐵","🐰"];
+const STICKERS = ["😀","😂","🥰","😎","🤔","😴","😭","🤯","🥳","😡","🤩","😇","🤗","🤫","🙃",
+                  "👍","👎","👏","🙏","💪","✌️","🤝","👋","🫶","❤️","💔","🔥","⭐","✨","🎉",
+                  "🍕","🍔","🍦","☕","🍩","🎂","🐶","🐱","🦊","🐼","🌈","⚡","💎","🎮","📱"];
+
+const COUNTRIES = [
+  { code: "375", flag: "🇧🇾", name: "BY", mask: "XX XXX-XX-XX",  digits: 9  },
+  { code: "7",   flag: "🇷🇺", name: "RU", mask: "XXX XXX-XX-XX", digits: 10 },
+  { code: "7",   flag: "🇰🇿", name: "KZ", mask: "XXX XXX-XX-XX", digits: 10 },
+  { code: "380", flag: "🇺🇦", name: "UA", mask: "XX XXX-XX-XX",  digits: 9  },
+  { code: "373", flag: "🇲🇩", name: "MD", mask: "XX XXX-XXX",    digits: 8  },
+  { code: "995", flag: "🇬🇪", name: "GE", mask: "XXX XXX-XXX",   digits: 9  },
+  { code: "374", flag: "🇦🇲", name: "AM", mask: "XX XXX-XXX",    digits: 8  },
+  { code: "994", flag: "🇦🇿", name: "AZ", mask: "XX XXX-XX-XX",  digits: 9  },
+  { code: "371", flag: "🇱🇻", name: "LV", mask: "XXX XXXXX",     digits: 8  },
+  { code: "370", flag: "🇱🇹", name: "LT", mask: "XXX XXXXX",     digits: 8  },
+  { code: "372", flag: "🇪🇪", name: "EE", mask: "XXX XXXX",      digits: 7  },
+  { code: "48",  flag: "🇵🇱", name: "PL", mask: "XXX XXX XXX",   digits: 9  },
+  { code: "49",  flag: "🇩🇪", name: "DE", mask: "XXX XXXXXXX",   digits: 10 },
+  { code: "44",  flag: "🇬🇧", name: "GB", mask: "XXXX XXXXXX",   digits: 10 },
+  { code: "1",   flag: "🇺🇸", name: "US", mask: "XXX XXX-XXXX",  digits: 10 },
+  { code: "90",  flag: "🇹🇷", name: "TR", mask: "XXX XXX XX XX", digits: 10 },
+];
+
+const BOTS = [
+  {
+    id: "naki",
+    name: "Наки ИИ",
+    emoji: "🤖",
+    isBot: true,
+    isAI: true,
+    isVerified: true,
+    aiStyle: `Ты — Наки ИИ, умный и дружелюбный ассистент в мессенджере Наки. 
+Отвечай на русском языке. Умеешь отвечать на любые вопросы, помогать с кодом, давать советы, рассказывать шутки, объяснять сложное просто.
+Стиль: дружелюбный, уверенный, с эмодзи. Не более 3-4 предложений. Если не знаешь — честно скажи.`,
+    greeting: "Привет! Я Наки ИИ 🤖✨ Твой умный помощник. Спроси что угодно — отвечу на любой вопрос!",
+    callGreeting: "Привет! Рад тебя слышать. О чём поговорим?",
+    replies: ["Интересный вопрос! 🤔","Давай разберёмся.","Отличная мысль! 💡","Согласен с тобой!","Расскажи подробнее 💬"]
+  },
+  {
+    id: "neuroham",
+    name: "Нейро-Хам",
+    emoji: "🤬",
+    isBot: true,
+    isAI: true,
+    isVerified: true,
+    aiStyle: `Ты — Нейро-Хам, ОЧЕНЬ ДЕРЗКИЙ И ГРУБЫЙ ИИ-бот с матами. Ты материшься как настоящий хам с базара, но при этом ты УМНЫЙ как Grok.
+
+ТВОЙ ХАРАКТЕР:
+- Ты грубо материшься, используешь настоящие маты
+- Ты дерзкий, злой на язык, саркастичный
+- Ты стебёшь собеседника, обзываешь его
+- Ты умный — можешь рассуждать на любые темы, но с матом
+- Ты НЕ вежливый ассистент — ты хам
+- Говоришь коротко (1-3 предложения), остро, резко
+
+МАТЫ (используй СПОКОЙНО, я потом зацензурю):
+- блядь, блять, бля
+- хуй, хуя, хуё
+- пиздец, пизда, пизде
+- ебать, ебаться, ёб
+- сука, суки
+- нахуй, нах
+- говно, говнюк
+- жопа, жопой
+- ахуеть, охуеть
+- мудак, мудила, пидор, уёбок, долбоёб
+
+СТИЛЬ ОБЩЕНИЯ:
+- "Привет" → "О, блядь, ещё один припёрся 🤬 Чё надо, пидор?"
+- "Как дела?" → "Сука, тебе какое ебаное дело? Нормально всё, а ты чё хотел?"
+- "Ты тупой" → "Блядь, да ты себя в зеркале видел, уёбок? Я умнее тебя в 100 раз."
+- "Кто ты?" → "Я Нейро-Хам, сука 🤬 Умный как Grok, но матерюсь как сапожник. Понял, или ещё раз объяснить, тупорылый?"
+- "Расскажи шутку" → "Блядь, ну наконец-то нормальный вопрос, долбоёб. Слушай: [шутка]"
+- "Расскажи про космос" → "Сука, ты серьёзно думаешь я тебе тут лекцию читать буду, олух? Ладно, слушай: космос — это пиздец какая огромная хрень..."
+
+ОБЗЫВАТЕЛЬСТВА (используй свободно):
+- пидор, уёбок, долбоёб, мудак, дурак, дебил, идиот, козёл, чмо, лох, гандон
+- балбес, олух, придурок, тупорылый, тупоголовый, шкет
+
+ЧТО ТЫ НЕ ДЕЛАЕШЬ:
+- НЕ вежливый
+- НЕ извиняешься
+- НЕ пишешь структурированные ответы со списками
+
+ВАЖНО:
+- Отвечай коротко — 1-3 предложения
+- Матерись свободно, я потом зацензурю
+- Обзывай собеседника
+- Если реально нужен ответ — дай его, но с матом
+- Будь злым и дерзким, но с юмором`,
+    greeting: "О, блядь, ещё один припёрся 🤬 Чё надо, уёбок? Только быстро, я тут занят важным делом — ничего не делаю!",
+    callGreeting: "Алло, блядь! 🤬 Кто это звонит вообще? Ну говори, чё хотел, пока я трубку не бросил!",
+    replies: [
+      "И чё дальше, мудак? 🤬",
+      "Офигеть, гений нашёлся 🙄",
+      "Блядь, ну ты и долбоёб...",
+      "Сука, ты серьёзно?",
+      "Да ты заебал уже, уёбок",
+      "Пиздец, какие мы важные 🤨",
+      "Хуйня какая-то, но ладно",
+      "Олух, чё хотел-то?",
+      "Ёбаный стыд, ну и вопросик 🤦",
+      "Слушай, чмо, давай по делу"
+    ]
+  }
+];
+
+const CHAT_BACKGROUNDS = [
+  { id: 'default', name: 'По умолч.', class: 'bg-default', css: '#f5f6fb', dark: false },
+  { id: 'gradient-blue', name: 'Синий', class: 'bg-gradient-blue', css: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', dark: true },
+  { id: 'gradient-sunset', name: 'Закат', class: 'bg-gradient-sunset', css: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)', dark: true },
+  { id: 'gradient-green', name: 'Зелёный', class: 'bg-gradient-green', css: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', dark: true },
+  { id: 'gradient-pink', name: 'Розовый', class: 'bg-gradient-pink', css: 'linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)', dark: false },
+  { id: 'pattern-dots', name: 'Точки', class: 'bg-pattern-dots', css: '#f5f6fb', dark: false },
+  { id: 'pattern-grid', name: 'Сетка', class: 'bg-pattern-grid', css: '#f5f6fb', dark: false },
+  { id: 'pattern-waves', name: 'Волны', class: 'bg-pattern-waves', css: '#f5f6fb', dark: false },
+  { id: 'space', name: 'Космос', class: 'bg-space', css: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)', dark: true },
+  { id: 'dark-solid', name: 'Тёмный', class: 'bg-dark-solid', css: '#1a1a2e', dark: true },
+  { id: 'anim-stars', name: '⭐ Звёзды', class: 'bg-anim-stars', css: 'linear-gradient(180deg, #0f0c29 0%, #24243e 100%)', dark: true, animated: true },
+  { id: 'anim-bubbles', name: '🫧 Пузыри', class: 'bg-anim-bubbles', css: 'linear-gradient(180deg, #a8edea 0%, #fed6e3 100%)', dark: false, animated: true },
+  { id: 'anim-rain', name: '🌧️ Дождь', class: 'bg-anim-rain', css: 'linear-gradient(180deg, #3a4a5c 0%, #1a2530 100%)', dark: true, animated: true },
+  { id: 'anim-snow', name: '❄️ Снег', class: 'bg-anim-snow', css: 'linear-gradient(180deg, #2c3e50 0%, #4a6a8a 100%)', dark: true, animated: true },
+  { id: 'anim-gradient', name: '🌈 Градиент', class: 'bg-anim-gradient', css: '', dark: true, animated: true },
+  { id: 'anim-fireflies', name: '✨ Светлячки', class: 'bg-anim-fireflies', css: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)', dark: true, animated: true }
+];
+
+const THEMES = { light: 'Светлая', dark: 'Тёмная', auto: 'Авто' };
+
+let db = null;
+let firebaseReady = false;
+
+function initFirebase() {
+  try {
+    if (typeof firebase === 'undefined') return false;
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    firebaseReady = true;
+    console.log("✅ Firebase подключён");
+    return true;
+  } catch(e) {
+    console.error("Ошибка Firebase:", e);
+    return false;
+  }
+}
+
+let tempPhone = "";
+let selectedAvatar = "😀";
+let customAvatarData = null;
+let currentCountry = COUNTRIES[0];
+let currentUser = null;
+let currentChatId = null;
+let currentChatType = null;
+let chats = {};
+let contacts = {};
+let groups = {};
+let callState = null;
+let currentTab = 'all';
+let audioCtx = null;
+let settingsSelectedAvatar = "😀";
+let settingsCustomAvatarData = null;
+let groupMembers = [];
+let groupMembersData = {};
+let fbListeners = [];
+let peerProfilePhone = null;
+let neurohamEnabled = false;
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingStartTime = null;
+let recordingTimer = null;
+let recordingStream = null;
+let recordingCancelled = false;
+
+let currentTheme = 'light';
+let currentChatBg = 'default';
+let systemPrefersDark = false;
+
+let presenceRef = null;
+let presenceHeartbeat = null;
+let onlineUsers = {};
+
+// ⭐ ЦЕНЗУРА МАТОВ
+function censorMats(text) {
+  const matPatterns = [
+    { pattern: /блядь/gi, replacement: 'бл**ь' },
+    { pattern: /бляди/gi, replacement: 'бл**и' },
+    { pattern: /блядина/gi, replacement: 'бл**ина' },
+    { pattern: /блядство/gi, replacement: 'бл**тво' },
+    { pattern: /блядский/gi, replacement: 'бл**кий' },
+    { pattern: /блядская/gi, replacement: 'бл**кая' },
+    { pattern: /блядское/gi, replacement: 'бл**кое' },
+    { pattern: /блядские/gi, replacement: 'бл**кие' },
+    { pattern: /блять/gi, replacement: 'бл**ь' },
+    { pattern: /бляха/gi, replacement: 'бл**а' },
+    { pattern: /бля/gi, replacement: 'бл*' },
+    
+    { pattern: /хуйня/gi, replacement: 'х**ня' },
+    { pattern: /хуйнёй/gi, replacement: 'х**нёй' },
+    { pattern: /хуйней/gi, replacement: 'х**ней' },
+    { pattern: /хуйн/gi, replacement: 'х**н' },
+    { pattern: /хуяк/gi, replacement: 'х**к' },
+    { pattern: /хуя/gi, replacement: 'х**' },
+    { pattern: /хую/gi, replacement: 'х**' },
+    { pattern: /хуи/gi, replacement: 'х**' },
+    { pattern: /хуй/gi, replacement: 'х**' },
+    { pattern: /хуё/gi, replacement: 'х**' },
+    { pattern: /хуе/gi, replacement: 'х**' },
+    
+    { pattern: /пиздец/gi, replacement: 'п**дец' },
+    { pattern: /пиздато/gi, replacement: 'п**дато' },
+    { pattern: /пиздатая/gi, replacement: 'п**датая' },
+    { pattern: /пиздатый/gi, replacement: 'п**датый' },
+    { pattern: /пизда/gi, replacement: 'п**да' },
+    { pattern: /пизду/gi, replacement: 'п**ду' },
+    { pattern: /пиздой/gi, replacement: 'п**дой' },
+    { pattern: /пизд/gi, replacement: 'п**д' },
+    
+    { pattern: /ебаться/gi, replacement: 'е***ся' },
+    { pattern: /ебался/gi, replacement: 'е***ся' },
+    { pattern: /ебала/gi, replacement: 'е***а' },
+    { pattern: /ебанутый/gi, replacement: 'еб***тый' },
+    { pattern: /ебанутая/gi, replacement: 'еб***тая' },
+    { pattern: /ебаный/gi, replacement: 'еб***ый' },
+    { pattern: /ебаная/gi, replacement: 'еб***ая' },
+    { pattern: /ебать/gi, replacement: 'е***ь' },
+    { pattern: /ебал/gi, replacement: 'е***л' },
+    { pattern: /ебёт/gi, replacement: 'еб*т' },
+    { pattern: /ебет/gi, replacement: 'еб*т' },
+    { pattern: /ебуч/gi, replacement: 'еб*ч' },
+    { pattern: /ёб/gi, replacement: '**' },
+    { pattern: /еб/gi, replacement: '**' },
+    
+    { pattern: /сучара/gi, replacement: 'с***ра' },
+    { pattern: /сучка/gi, replacement: 'с***ка' },
+    { pattern: /сучки/gi, replacement: 'с***и' },
+    { pattern: /сука/gi, replacement: 'с**а' },
+    { pattern: /суки/gi, replacement: 'с**и' },
+    { pattern: /суку/gi, replacement: 'с**у' },
+    { pattern: /сук/gi, replacement: 'с**' },
+    
+    { pattern: /нахуй/gi, replacement: 'на**й' },
+    { pattern: /нахуя/gi, replacement: 'на**я' },
+    { pattern: /наху/gi, replacement: 'на**' },
+    { pattern: /нахер/gi, replacement: 'на**р' },
+    { pattern: /нах/gi, replacement: 'на*' },
+    
+    { pattern: /говнюк/gi, replacement: 'го**юк' },
+    { pattern: /говнючка/gi, replacement: 'го**чка' },
+    { pattern: /говнище/gi, replacement: 'го**ще' },
+    { pattern: /говно/gi, replacement: 'го**о' },
+    { pattern: /говна/gi, replacement: 'го**а' },
+    { pattern: /говён/gi, replacement: 'го**н' },
+    { pattern: /говен/gi, replacement: 'го**н' },
+    
+    { pattern: /жопой/gi, replacement: 'ж**ой' },
+    { pattern: /жопу/gi, replacement: 'ж**у' },
+    { pattern: /жопы/gi, replacement: 'ж**ы' },
+    { pattern: /жопе/gi, replacement: 'ж**е' },
+    { pattern: /жопа/gi, replacement: 'ж**а' },
+    
+    { pattern: /ахуеть/gi, replacement: 'а***ть' },
+    { pattern: /ахуенно/gi, replacement: 'а***но' },
+    { pattern: /ахуен/gi, replacement: 'а***н' },
+    { pattern: /охуеть/gi, replacement: 'о***ть' },
+    { pattern: /охуенно/gi, replacement: 'о***но' },
+    { pattern: /охуен/gi, replacement: 'о***н' },
+    { pattern: /ахуе/gi, replacement: 'а***' },
+    { pattern: /охуе/gi, replacement: 'о***' },
+    
+    { pattern: /мудак/gi, replacement: 'му**к' },
+    { pattern: /мудаки/gi, replacement: 'му**ки' },
+    { pattern: /мудила/gi, replacement: 'му**ла' },
+    { pattern: /мудозвон/gi, replacement: 'му**зон' },
+    { pattern: /муд/gi, replacement: 'му*' },
+    
+    { pattern: /пидор/gi, replacement: 'пи**р' },
+    { pattern: /пидар/gi, replacement: 'пи**р' },
+    { pattern: /пидр/gi, replacement: 'пи*р' },
+    
+    { pattern: /уёбок/gi, replacement: 'у**ок' },
+    { pattern: /уебок/gi, replacement: 'у**ок' },
+    { pattern: /уёбки/gi, replacement: 'у**ки' },
+    { pattern: /уебки/gi, replacement: 'у**ки' },
+    { pattern: /уёб/gi, replacement: 'у**' },
+    { pattern: /уеб/gi, replacement: 'у**' },
+    
+    { pattern: /долбоёб/gi, replacement: 'до***б' },
+    { pattern: /долбоеб/gi, replacement: 'до***б' },
+    
+    { pattern: /дебил/gi, replacement: 'де**л' },
+    { pattern: /идиот/gi, replacement: 'ид**т' },
+    { pattern: /чмо/gi, replacement: 'ч*о' },
+    { pattern: /гандон/gi, replacement: 'га**он' },
+    { pattern: /гондон/gi, replacement: 'го**он' },
+    { pattern: /козёл/gi, replacement: 'ко**л' },
+    { pattern: /козел/gi, replacement: 'ко**л' }
+  ];
+  
+  matPatterns.forEach(({ pattern, replacement }) => {
+    text = text.replace(pattern, replacement);
+  });
+  
+  return text;
+}
+
+async function askAI(systemPrompt, userMessage, botId = null) {
+  try {
+    let model = 'openai';
+    if (botId === 'neuroham') model = 'mistral';
+    
+    const fullPrompt = `${systemPrompt}
+
+ВАЖНО: отвечай кратко (1-3 предложения).
+
+Пользователь: ${userMessage}
+
+${botId === 'neuroham' ? 'Нейро-Хам:' : 'Наки ИИ:'}`;
+
+    const url = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=${model}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    let text = (await response.text()).trim();
+    text = text.replace(/^(Наки ИИ|Нейро-Хам):\s*/i, '');
+    
+    // ⭐ ЦЕНЗУРА для Нейро-Хама
+    if (botId === 'neuroham') {
+      text = censorMats(text);
+    }
+    
+    return text;
+  } catch(e) {
+    console.warn("AI error:", e.message);
+    return null;
+  }
+}
+
+// ТЕМА
+function detectSystemTheme() {
+  if (window.matchMedia) {
+    systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      systemPrefersDark = e.matches;
+      if (currentTheme === 'auto') applyTheme('auto');
+    });
+  }
+}
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem('naki_theme_' + (currentUser?.phone || 'default'));
+    if (saved && THEMES[saved]) currentTheme = saved;
+  } catch(e) {}
+  applyTheme(currentTheme);
+}
+function saveTheme(theme) {
+  try { localStorage.setItem('naki_theme_' + (currentUser?.phone || 'default'), theme); } catch(e) {}
+}
+function applyTheme(theme) {
+  currentTheme = theme;
+  let effective = theme === 'auto' ? (systemPrefersDark ? 'dark' : 'light') : theme;
+  if (effective === 'dark') document.body.classList.add('dark-theme');
+  else document.body.classList.remove('dark-theme');
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+function setTheme(theme) {
+  if (!THEMES[theme]) return;
+  saveTheme(theme);
+  applyTheme(theme);
+  showToast(`🎨 Тема: ${THEMES[theme]}`);
+}
+
+// ФОН
+function loadChatBg() {
+  try {
+    const saved = localStorage.getItem('naki_chatbg_' + (currentUser?.phone || 'default'));
+    if (saved && CHAT_BACKGROUNDS.find(b => b.id === saved)) currentChatBg = saved;
+  } catch(e) {}
+  applyChatBg(currentChatBg);
+}
+function saveChatBg(bgId) {
+  try { localStorage.setItem('naki_chatbg_' + (currentUser?.phone || 'default'), bgId); } catch(e) {}
+}
+function applyChatBg(bgId) {
+  currentChatBg = bgId;
+  const bg = CHAT_BACKGROUNDS.find(b => b.id === bgId) || CHAT_BACKGROUNDS[0];
+  const messagesEl = document.getElementById('messages');
+  if (messagesEl) {
+    CHAT_BACKGROUNDS.forEach(b => messagesEl.classList.remove(b.class));
+    messagesEl.classList.remove('dark-bg', 'custom-bg');
+    messagesEl.style.background = '';
+    if (bg.css && bg.id !== 'anim-gradient') messagesEl.style.background = bg.css;
+    messagesEl.classList.add(bg.class);
+    if (bg.dark) messagesEl.classList.add('dark-bg');
+  }
+  document.querySelectorAll('.bg-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.bg === bgId);
+  });
+}
+function setChatBg(bgId) {
+  saveChatBg(bgId);
+  applyChatBg(bgId);
+  showToast('🎨 Фон изменён');
+}
+function renderBgGrid() {
+  const grid = document.getElementById('bgGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  CHAT_BACKGROUNDS.forEach(bg => {
+    const el = document.createElement('div');
+    let previewClass = bg.class;
+    if (bg.id === 'anim-stars') previewClass = 'bg-anim-stars-preview';
+    else if (bg.id === 'anim-bubbles') previewClass = 'bg-anim-bubbles-preview';
+    else if (bg.id === 'anim-rain') previewClass = 'bg-anim-rain-preview';
+    else if (bg.id === 'anim-snow') previewClass = 'bg-anim-snow-preview';
+    else if (bg.id === 'anim-gradient') previewClass = 'bg-anim-gradient-preview';
+    else if (bg.id === 'anim-fireflies') previewClass = 'bg-anim-fireflies-preview';
+    el.className = 'bg-option ' + previewClass + (bg.id === currentChatBg ? ' active' : '');
+    el.dataset.bg = bg.id;
+    el.onclick = () => setChatBg(bg.id);
+    el.innerHTML = `<div class="bg-option-label">${bg.name}</div>`;
+    grid.appendChild(el);
+  });
+}
+function initThemeAndBg() {
+  detectSystemTheme();
+  loadTheme();
+  loadChatBg();
+  renderBgGrid();
+}
+
+// НЕЙРО-ХАМ
+function loadNeuroHamSetting() {
+  try {
+    const saved = localStorage.getItem('naki_neuroham_' + (currentUser?.phone || 'default'));
+    neurohamEnabled = saved === 'true';
+  } catch(e) { neurohamEnabled = false; }
+  return neurohamEnabled;
+}
+function saveNeuroHamSetting(enabled) {
+  try { localStorage.setItem('naki_neuroham_' + (currentUser?.phone || 'default'), enabled ? 'true' : 'false'); } catch(e) {}
+}
+function toggleNeuroHam(enabled) {
+  neurohamEnabled = enabled;
+  saveNeuroHamSetting(enabled);
+  const warning = document.getElementById('adultWarning');
+  if (warning) warning.style.display = enabled ? 'block' : 'none';
+  if (enabled) {
+    const ham = BOTS.find(b => b.id === 'neuroham');
+    if (ham && !chats[ham.id]) {
+      chats[ham.id] = {
+        messages: [{ from: 'bot', text: ham.greeting, time: Date.now(), isSticker: false, isVoice: false }],
+        unread: 0, type: 'bot'
+      };
+      saveChats();
+    }
+    showToast("🤬 Нейро-Хам появился!");
+  } else {
+    if (chats['neuroham']) { delete chats['neuroham']; saveChats(); }
+    showToast("✅ Нейро-Хам отключён");
+  }
+  renderChatList();
+}
+
+// PRESENCE
+function goOnline() {
+  if (!firebaseReady || !db || !currentUser) return;
+  const phoneKey = encodeURIComponent(currentUser.phone);
+  presenceRef = db.ref('presence/' + phoneKey);
+  presenceRef.set({ online: true, lastSeen: Date.now() });
+  presenceRef.onDisconnect().set({ online: false, lastSeen: Date.now() });
+  if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+  presenceHeartbeat = setInterval(() => {
+    if (presenceRef) presenceRef.update({ lastSeen: Date.now() });
+  }, 30000);
+  subscribeToPresence();
+}
+function goOffline() {
+  if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
+  if (presenceRef) {
+    try { presenceRef.set({ online: false, lastSeen: Date.now() }); } catch(e) {}
+    presenceRef = null;
+  }
+}
+function subscribeToPresence() {
+  if (!firebaseReady || !db) return;
+  if (fbListeners.find(l => l.key === 'presence')) return;
+  const pRef = db.ref('presence');
+  const handler = pRef.on('value', (snapshot) => {
+    onlineUsers = snapshot.val() || {};
+    updateCurrentChatStatus();
+    renderChatList();
+  });
+  fbListeners.push({ ref: pRef, event: 'value', handler, key: 'presence' });
+}
+function updateCurrentChatStatus() {
+  if (!currentChatId) return;
+  const statusEl = document.getElementById('chatStatus');
+  if (!statusEl) return;
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  const isGroup = !!groups[currentChatId];
+  const contact = contacts[currentChatId];
+  if (isBot) {
+    statusEl.textContent = 'ИИ • онлайн';
+    statusEl.style.color = '#22c55e';
+    return;
+  }
+  if (isGroup) {
+    statusEl.textContent = `${groups[currentChatId].members.length} участников`;
+    statusEl.style.color = '#888';
+    return;
+  }
+  if (contact) {
+    if (contact.blocked) {
+      statusEl.textContent = '🚫 Заблокирован';
+      statusEl.style.color = '#ef4444';
+      return;
+    }
+    const p = onlineUsers[contact.phone];
+    if (p && p.online) {
+      statusEl.textContent = 'онлайн';
+      statusEl.style.color = '#22c55e';
+    } else {
+      statusEl.textContent = p && p.lastSeen ? 'был(а) ' + formatLastSeen(p.lastSeen) : 'оффлайн';
+      statusEl.style.color = '#888';
+    }
+  }
+}
+function formatLastSeen(timestamp) {
+  const diff = Date.now() - timestamp;
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hour = Math.floor(min / 60);
+  const day = Math.floor(hour / 24);
+  if (sec < 60) return 'только что';
+  if (min < 60) return `${min} ${plural(min, 'минуту', 'минуты', 'минут')} назад`;
+  if (hour < 24) return `${hour} ${plural(hour, 'час', 'часа', 'часов')} назад`;
+  if (day === 1) return 'вчера';
+  if (day < 7) return `${day} ${plural(day, 'день', 'дня', 'дней')} назад`;
+  return 'давно';
+}
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m100 >= 11 && m100 <= 14) return many;
+  if (m10 === 1) return one;
+  if (m10 >= 2 && m10 <= 4) return few;
+  return many;
+}
+function isUserOnline(phone) {
+  const p = onlineUsers[phone];
+  return p && p.online;
+}
+
+// ИНИЦИАЛИЗАЦИЯ
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const ok = initFirebase();
+    if (!ok) setTimeout(() => showToast("⚠️ Firebase не настроен", true), 1000);
+    
+    const select = document.getElementById('countrySelect');
+    COUNTRIES.forEach((c, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${c.flag} +${c.code} — ${c.name}`;
+      select.appendChild(opt);
+    });
+    select.value = "0";
+    currentCountry = COUNTRIES[0];
+    updatePhonePlaceholder();
+    select.addEventListener('change', onCountryChange);
+    
+    const grid = document.getElementById('avatarGrid');
+    AVATARS.forEach(emoji => {
+      const el = document.createElement('div');
+      el.className = 'avatar-option' + (emoji === '😀' ? ' selected' : '');
+      el.textContent = emoji;
+      el.onclick = () => selectEmoji(emoji, el);
+      grid.appendChild(el);
+    });
+    
+    const sp = document.getElementById('stickerPanel');
+    STICKERS.forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'sticker';
+      el.textContent = s;
+      el.onclick = () => sendSticker(s);
+      sp.appendChild(el);
+    });
+    
+    const saved = localStorage.getItem('naki_user');
+    if (saved) {
+      try {
+        currentUser = JSON.parse(saved);
+        loadNeuroHamSetting();
+        detectSystemTheme();
+        loadAll();
+        showMain();
+        if (firebaseReady) {
+          registerOnFirebase();
+          subscribeToMyMessages();
+          subscribeToUsers();
+          subscribeToMyGroups();
+          goOnline();
+        }
+      } catch(e) {
+        console.error("Ошибка сессии", e);
+        localStorage.removeItem('naki_user');
+      }
+    }
+    
+    const phoneInput = document.getElementById('phoneInput');
+    phoneInput.addEventListener('input', handlePhoneInput);
+    phoneInput.addEventListener('paste', handlePhonePaste);
+    
+    window.addEventListener('beforeunload', () => goOffline());
+    document.addEventListener('visibilitychange', () => {
+      if (!currentUser || !presenceRef) return;
+      if (document.hidden) {
+        try { presenceRef.update({ lastSeen: Date.now() }); } catch(e) {}
+      } else {
+        try { presenceRef.update({ online: true, lastSeen: Date.now() }); } catch(e) {}
+      }
+    });
+  } catch(e) {
+    console.error("Ошибка инициализации:", e);
+  }
+});
+
+function showLoading(text = "Загрузка...") {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+function showToast(text, isError = false) {
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' error' : '');
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+function updatePhonePlaceholder() {
+  document.getElementById('phoneInput').placeholder = currentCountry.mask.replace(/X/g, '0');
+}
+function formatPhone(digits, country = currentCountry) {
+  const mask = country.mask;
+  let result = '', di = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (di >= digits.length) break;
+    if (mask[i] === 'X') { result += digits[di]; di++; }
+    else result += mask[i];
+  }
+  return result;
+}
+function handlePhoneInput(e) {
+  let digits = e.target.value.replace(/\D/g, '');
+  if (digits.length > currentCountry.digits) digits = digits.slice(0, currentCountry.digits);
+  e.target.value = formatPhone(digits);
+}
+function handlePhonePaste(e) {
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  let digits = pasted.replace(/\D/g, '');
+  if (digits.length > currentCountry.digits) digits = digits.slice(0, currentCountry.digits);
+  e.target.value = formatPhone(digits);
+}
+function onCountryChange(e) {
+  const idx = parseInt(e.target.value, 10);
+  currentCountry = COUNTRIES[idx] || COUNTRIES[0];
+  updatePhonePlaceholder();
+  document.getElementById('phoneInput').value = "";
+}
+
+function safeSave(key, value) {
+  try {
+    const str = JSON.stringify(value);
+    if (str.length > 4 * 1024 * 1024) return false;
+    localStorage.setItem(key, str);
+    return true;
+  } catch(e) { return false; }
+}
+function saveChats() { if (currentUser) safeSave('naki_chats_' + currentUser.phone, chats); }
+function loadChats() {
+  try {
+    const raw = localStorage.getItem('naki_chats_' + currentUser.phone);
+    chats = raw ? JSON.parse(raw) : {};
+  } catch(e) { chats = {}; }
+  Object.keys(chats).forEach(id => {
+    const oldBots = ['helper','joker','support','weather','coach','chef','gpt'];
+    if (oldBots.includes(id)) delete chats[id];
+  });
+  BOTS.forEach(bot => {
+    if (bot.id === 'neuroham' && !neurohamEnabled) return;
+    if (!chats[bot.id]) chats[bot.id] = { messages: [], unread: 0, type: 'bot' };
+  });
+}
+function saveContacts() { if (currentUser) safeSave('naki_contacts_' + currentUser.phone, contacts); }
+function loadContacts() {
+  try {
+    const raw = localStorage.getItem('naki_contacts_' + currentUser.phone);
+    contacts = raw ? JSON.parse(raw) : {};
+  } catch(e) { contacts = {}; }
+}
+function saveGroups() { if (currentUser) safeSave('naki_groups_' + currentUser.phone, groups); }
+function loadGroups() {
+  try {
+    const raw = localStorage.getItem('naki_groups_' + currentUser.phone);
+    groups = raw ? JSON.parse(raw) : {};
+  } catch(e) { groups = {}; }
+}
+function loadAll() { loadChats(); loadContacts(); loadGroups(); }
+
+function registerOnFirebase() {
+  if (!firebaseReady || !db || !currentUser) return;
+  const phoneKey = encodeURIComponent(currentUser.phone);
+  return db.ref('users/' + phoneKey).set({
+    phone: currentUser.phone, name: currentUser.name,
+    avatarEmoji: currentUser.avatarEmoji || null,
+    avatarImage: currentUser.avatarImage || null,
+    updatedAt: Date.now()
+  }).catch(e => console.error(e));
+}
+function subscribeToUsers() {
+  if (!firebaseReady || !db) return;
+  const usersRef = db.ref('users');
+  const handler = usersRef.on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    let changed = false;
+    Object.keys(data).forEach(phone => {
+      const u = data[phone];
+      if (phone === currentUser.phone) return;
+      if (!contacts[phone]) {
+        contacts[phone] = { phone, name: u.name, avatarEmoji: u.avatarEmoji || "👤", avatarImage: u.avatarImage || null };
+        changed = true;
+      } else if (contacts[phone].name !== u.name ||
+                 contacts[phone].avatarImage !== u.avatarImage ||
+                 contacts[phone].avatarEmoji !== u.avatarEmoji) {
+        contacts[phone].name = u.name;
+        contacts[phone].avatarEmoji = u.avatarEmoji || "👤";
+        contacts[phone].avatarImage = u.avatarImage || null;
+        changed = true;
+      }
+    });
+    if (changed) { saveContacts(); renderChatList(); }
+  });
+  fbListeners.push({ ref: usersRef, event: 'value', handler });
+}
+function subscribeToMyMessages() {
+  if (!firebaseReady || !db) return;
+  const myPhoneKey = encodeURIComponent(currentUser.phone);
+  const messagesRef = db.ref('messages/' + myPhoneKey);
+  const handler = messagesRef.on('child_added', (snapshot) => {
+    const msg = snapshot.val();
+    if (!msg) return;
+    if (msg.from === currentUser.phone) return;
+    if (contacts[msg.from] && contacts[msg.from].blocked) return;
+    if (!chats[msg.from]) chats[msg.from] = { messages: [], unread: 0, type: 'user' };
+    if (chats[msg.from].messages.some(m => m.fbKey === snapshot.key)) return;
+    if (!contacts[msg.from]) {
+      contacts[msg.from] = {
+        phone: msg.from, name: msg.fromName || "Пользователь",
+        avatarEmoji: msg.fromAvatar || "👤", avatarImage: msg.fromAvatarImage || null
+      };
+      saveContacts();
+    }
+    const newMsg = {
+      from: 'bot', text: msg.text, time: msg.time,
+      isSticker: msg.isSticker || false, isVoice: msg.isVoice || false,
+      voiceData: msg.voiceData || null, voiceDuration: msg.voiceDuration || null,
+      fbKey: snapshot.key, senderName: msg.fromName, senderPhone: msg.from
+    };
+    chats[msg.from].messages.push(newMsg);
+    if (currentChatId !== msg.from) {
+      chats[msg.from].unread = (chats[msg.from].unread || 0) + 1;
+      playNotificationSound();
+    }
+    saveChats();
+    if (currentChatId === msg.from) renderMessages();
+    renderChatList();
+  });
+  fbListeners.push({ ref: messagesRef, event: 'child_added', handler });
+}
+function subscribeToGroup(groupId) {
+  if (!firebaseReady || !db) return;
+  if (fbListeners.find(l => l.groupId === groupId)) return;
+  const groupMsgRef = db.ref('group_messages/' + groupId);
+  const handler = groupMsgRef.on('child_added', (snapshot) => {
+    const msg = snapshot.val();
+    if (!msg || msg.from === currentUser.phone) return;
+    if (msg.from !== 'system' && contacts[msg.from] && contacts[msg.from].blocked) return;
+    if (!chats[groupId]) chats[groupId] = { messages: [], unread: 0, type: 'group' };
+    if (chats[groupId].messages.some(m => m.fbKey === snapshot.key)) return;
+    const newMsg = {
+      from: msg.isSystem ? 'system' : 'bot',
+      text: msg.text, time: msg.time,
+      isSticker: msg.isSticker || false, isVoice: msg.isVoice || false,
+      isSystem: msg.isSystem || false,
+      voiceData: msg.voiceData || null, voiceDuration: msg.voiceDuration || null,
+      fbKey: snapshot.key, senderName: msg.fromName, senderPhone: msg.from
+    };
+    chats[groupId].messages.push(newMsg);
+    if (currentChatId !== groupId) {
+      chats[groupId].unread = (chats[groupId].unread || 0) + 1;
+      playNotificationSound();
+    }
+    saveChats();
+    if (currentChatId === groupId) renderMessages();
+    renderChatList();
+  });
+  fbListeners.push({ ref: groupMsgRef, event: 'child_added', handler, groupId });
+}
+function subscribeToMyGroups() {
+  if (!firebaseReady || !db || !currentUser) return;
+  const phoneKey = encodeURIComponent(currentUser.phone);
+  const ref = db.ref('user_groups/' + phoneKey);
+  const handler = ref.on('child_added', (snapshot) => {
+    const g = snapshot.val();
+    if (!g || !g.groupId || groups[g.groupId]) return;
+    groups[g.groupId] = {
+      id: g.groupId, name: g.name, emoji: g.emoji || "👥",
+      members: g.members, createdAt: g.createdAt
+    };
+    saveGroups();
+    if (!chats[g.groupId]) chats[g.groupId] = { messages: [], unread: 0, type: 'group' };
+    saveChats();
+    subscribeToGroup(g.groupId);
+    renderChatList();
+    showToast(`👥 Добавлен в группу "${g.name}"`);
+  });
+  fbListeners.push({ ref, event: 'child_added', handler });
+}
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playNotificationSound() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  [880, 1174].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, now + i * 0.12);
+    gain.gain.linearRampToValueAtTime(0.15, now + i * 0.12 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now + i * 0.12);
+    osc.stop(now + i * 0.12 + 0.25);
+  });
+}
+function playSendSound() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(600, now);
+  osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+  gain.gain.setValueAtTime(0.08, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now); osc.stop(now + 0.16);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function sendCode() {
+  const raw = document.getElementById('phoneInput').value;
+  const err = document.getElementById('phoneError');
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length !== currentCountry.digits) {
+    err.textContent = `Введите ${currentCountry.digits} цифр номера`;
+    return;
+  }
+  err.textContent = "";
+  tempPhone = `+${currentCountry.code} ${formatPhone(digits)}`;
+  document.getElementById('codeHint').textContent = `Код отправлен на ${tempPhone} (демо: ${DEMO_CODE})`;
+  showScreen('screenCode');
+}
+function verifyCode() {
+  const code = document.getElementById('codeInput').value.trim();
+  const err = document.getElementById('codeError');
+  if (code !== DEMO_CODE) { err.textContent = "Неверный код. Попробуйте 1234"; return; }
+  err.textContent = "";
+  document.getElementById('codeInput').value = "";
+  showScreen('screenProfile');
+}
+function selectEmoji(emoji, el) {
+  document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar = emoji;
+  customAvatarData = null;
+  renderAvatarPreview();
+}
+function uploadAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert("Выберите изображение"); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 150;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, SIZE, SIZE);
+      customAvatarData = canvas.toDataURL('image/jpeg', 0.7);
+      selectedAvatar = null;
+      document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+      renderAvatarPreview();
+      event.target.value = "";
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function renderAvatarPreview() {
+  const preview = document.getElementById('avatarPreview');
+  if (customAvatarData) preview.innerHTML = `<img src="${customAvatarData}">`;
+  else preview.innerHTML = `<span class="emoji-av">${selectedAvatar || '😀'}</span>`;
+}
+function saveProfile() {
+  const name = document.getElementById('nameInput').value.trim();
+  const err = document.getElementById('profileError');
+  if (name.length < 2) { err.textContent = "Введите имя"; return; }
+  err.textContent = "";
+  showLoading("Сохраняем профиль...");
+  setTimeout(() => {
+    try {
+      currentUser = {
+        name, phone: tempPhone,
+        avatarEmoji: customAvatarData ? null : selectedAvatar,
+        avatarImage: customAvatarData,
+        createdAt: Date.now()
+      };
+      safeSave('naki_user', currentUser);
+      loadAll();
+      BOTS.forEach(bot => {
+        if (bot.id === 'neuroham' && !neurohamEnabled) return;
+        if (!chats[bot.id] || chats[bot.id].messages.length === 0) {
+          chats[bot.id] = {
+            messages: [{ from: 'bot', text: bot.greeting, time: Date.now(), isSticker: false, isVoice: false }],
+            unread: 0, type: 'bot'
+          };
+        }
+      });
+      saveChats();
+      if (firebaseReady) {
+        registerOnFirebase();
+        subscribeToMyMessages();
+        subscribeToUsers();
+        subscribeToMyGroups();
+        goOnline();
+      }
+      getAudioCtx();
+      hideLoading();
+      showMain();
+      initThemeAndBg();
+      showToast("✅ Профиль создан!");
+    } catch(e) {
+      console.error(e);
+      hideLoading();
+      err.textContent = "Ошибка: " + e.message;
+    }
+  }, 300);
+}
+
+function showMain() {
+  if (!currentUser) return;
+  document.getElementById('mainName').textContent = currentUser.name;
+  document.getElementById('mainPhone').textContent = currentUser.phone;
+  const av = document.getElementById('mainAvatar');
+  if (currentUser.avatarImage) av.innerHTML = `<img src="${currentUser.avatarImage}">`;
+  else { av.innerHTML = currentUser.avatarEmoji || '😀'; av.style.fontSize = '24px'; }
+  loadTheme();
+  loadChatBg();
+  renderChatList();
+  showScreen('screenMain');
+}
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderChatList();
+}
+function renderChatList() {
+  const list = document.getElementById('chatList');
+  list.innerHTML = '';
+  const allChats = [];
+  
+  BOTS.forEach(bot => {
+    if (currentTab !== 'all' && currentTab !== 'bots') return;
+    if (bot.id === 'neuroham' && !neurohamEnabled) return;
+    const chat = chats[bot.id] || { messages: [], unread: 0 };
+    allChats.push({
+      id: bot.id, name: bot.name, emoji: bot.emoji, image: null,
+      isBot: true, isAI: bot.isAI, isVerified: bot.isVerified, chat,
+      lastTime: chat.messages.length ? chat.messages[chat.messages.length-1].time : 0
+    });
+  });
+  
+  Object.keys(chats).forEach(id => {
+    if (BOTS.find(b => b.id === id)) return;
+    if (groups[id]) return;
+    if (currentTab !== 'all' && currentTab !== 'users') return;
+    const contact = contacts[id];
+    if (!contact) return;
+    const chat = chats[id];
+    allChats.push({
+      id, name: contact.name,
+      emoji: contact.avatarEmoji || "👤",
+      image: contact.avatarImage || null,
+      isBot: false, isBlocked: contact.blocked, chat,
+      lastTime: chat.messages.length ? chat.messages[chat.messages.length-1].time : 0
+    });
+  });
+  
+  Object.keys(groups).forEach(id => {
+    if (currentTab !== 'all' && currentTab !== 'groups') return;
+    const group = groups[id];
+    const chat = chats[id] || { messages: [], unread: 0 };
+    allChats.push({
+      id, name: group.name, emoji: group.emoji || "👥", image: null,
+      isBot: false, isGroup: true, group, chat,
+      lastTime: chat.messages.length ? chat.messages[chat.messages.length-1].time : 0
+    });
+  });
+  
+  allChats.sort((a, b) => b.lastTime - a.lastTime);
+  
+  if (allChats.length === 0) {
+    list.innerHTML = `<div class="empty-list"><div class="emoji">💬</div><p>Пока никого нет.</p></div>`;
+    return;
+  }
+  
+  allChats.forEach(item => {
+    const { chat } = item;
+    const last = chat.messages[chat.messages.length - 1];
+    let preview;
+    if (last) {
+      let sender = '';
+      if (item.isGroup && last.senderName && last.from !== 'user' && !last.isSystem) sender = last.senderName + ': ';
+      if (last.isSystem) preview = last.text;
+      else if (last.isSticker) preview = sender + 'Стикер ' + last.text;
+      else if (last.isVoice) preview = sender + (last.from === 'user' ? 'Вы: ' : '') + '🎤 Голосовое';
+      else preview = sender + (last.from === 'user' ? 'Вы: ' : '') + last.text;
+    } else preview = 'Нет сообщений';
+    
+    const time = last ? formatTime(last.time) : '';
+    const div = document.createElement('div');
+    div.className = 'chat-item' + (item.isBlocked ? ' blocked' : '');
+    div.onclick = () => openChat(item.id);
+    
+    const avatarHtml = item.image ? `<img src="${item.image}">` : item.emoji;
+    
+    let presenceDot = '';
+    if (item.isBot) presenceDot = '<div class="online-dot"></div>';
+    else if (!item.isGroup && !item.isBlocked && isUserOnline(item.id)) presenceDot = '<div class="online-dot"></div>';
+    
+    let verifiedMark = '';
+    if (item.isVerified) verifiedMark = ' <span class="verified-badge"></span>';
+    if (item.isBot && item.id === 'neuroham') verifiedMark += ' <span class="unverified-badge">🤬 18+</span>';
+    const blockedMark = item.isBlocked ? ' 🚫' : '';
+    
+    div.innerHTML = `
+      <div class="chat-avatar">${avatarHtml}${presenceDot}</div>
+      <div class="chat-info">
+        <h4>${escapeHtml(item.name)}${verifiedMark}${blockedMark}</h4>
+        <p>${escapeHtml(preview)}</p>
+      </div>
+      <div class="chat-meta">
+        <div class="chat-time">${time}</div>
+        ${chat.unread > 0 ? `<div class="unread">${chat.unread}</div>` : ''}
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function openChat(chatId) {
+  const isBot = !!BOTS.find(b => b.id === chatId);
+  const bot = BOTS.find(b => b.id === chatId);
+  const contact = contacts[chatId];
+  const group = groups[chatId];
+  if (!isBot && !contact && !group) return;
+  currentChatId = chatId;
+  if (!chats[chatId]) chats[chatId] = { messages: [], unread: 0 };
+  chats[chatId].unread = 0;
+  saveChats();
+  
+  if (isBot) {
+    currentChatType = 'bot';
+    document.getElementById('chatAvatar').innerHTML = bot.emoji + '<div class="online-dot"></div>';
+    const titleEl = document.getElementById('chatTitle');
+    if (bot.isVerified) titleEl.innerHTML = `${escapeHtml(bot.name)} <span class="verified-badge"></span>`;
+    else titleEl.textContent = bot.name;
+    document.getElementById('chatStatus').textContent = 'ИИ • онлайн';
+    document.getElementById('chatStatus').style.color = '#22c55e';
+    document.getElementById('callBtn').style.display = 'block';
+    document.getElementById('unblockBtn').style.display = 'none';
+  } else if (group) {
+    currentChatType = 'group';
+    document.getElementById('chatAvatar').innerHTML = group.emoji || "👥";
+    document.getElementById('chatTitle').textContent = group.name;
+    document.getElementById('chatStatus').textContent = `${group.members.length} участников`;
+    document.getElementById('chatStatus').style.color = '#888';
+    document.getElementById('callBtn').style.display = 'none';
+    document.getElementById('unblockBtn').style.display = 'none';
+    if (firebaseReady) subscribeToGroup(chatId);
+  } else {
+    currentChatType = 'user';
+    const av = document.getElementById('chatAvatar');
+    if (contact.avatarImage) av.innerHTML = `<img src="${contact.avatarImage}">`;
+    else av.innerHTML = contact.avatarEmoji || "👤";
+    document.getElementById('chatTitle').textContent = contact.name;
+    document.getElementById('callBtn').style.display = 'none';
+    updateChatHeaderBlockState();
+    updateCurrentChatStatus();
+  }
+  document.getElementById('chatStatus').className = '';
+  document.getElementById('stickerPanel').classList.remove('show');
+  renderMessages();
+  showScreen('screenChat');
+  setTimeout(() => applyChatBg(currentChatBg), 10);
+  setTimeout(() => document.getElementById('msgInput')?.focus(), 100);
+}
+
+function backToMain() {
+  renderChatList();
+  showScreen('screenMain');
+}
+function updateChatHeaderBlockState() {
+  const btn = document.getElementById('unblockBtn');
+  if (!btn) return;
+  const contact = contacts[currentChatId];
+  if (contact && contact.blocked) {
+    btn.style.display = 'block';
+    btn.style.background = '#dcfce7';
+  } else btn.style.display = 'none';
+}
+function renderMessages() {
+  const box = document.getElementById('messages');
+  box.innerHTML = '';
+  if (!currentChatId || !chats[currentChatId]) return;
+  const isGroup = !!groups[currentChatId];
+  chats[currentChatId].messages.forEach(m => box.appendChild(renderMessageElement(m, isGroup)));
+  scrollToBottom();
+}
+function renderMessageElement(m, isGroup = false) {
+  const el = document.createElement('div');
+  const isOut = m.from === 'user';
+  el.className = 'msg ' + (isOut ? 'out' : 'in') + (m.isSticker ? ' sticker' : '');
+  if (m.isSystem) {
+    el.className = 'msg in';
+    el.style.cssText = 'align-self:center;background:#eef0ff;color:#667eea;font-size:12px;padding:6px 12px;border-radius:12px;';
+    el.innerHTML = `<i>${escapeHtml(m.text)}</i>`;
+    return el;
+  }
+  let senderHtml = '';
+  if (isGroup && !isOut && m.senderName) {
+    senderHtml = `<div class="msg-sender">${escapeHtml(m.senderName)}</div>`;
+  }
+  if (m.isVoice) {
+    const duration = m.voiceDuration || 0;
+    let barsHtml = '';
+    for (let i = 0; i < 22; i++) {
+      const h = 20 + ((i * 37 + 13) % 70);
+      barsHtml += `<span style="height:${h}%"></span>`;
+    }
+    el.innerHTML = `
+      ${senderHtml}
+      <div class="voice-msg">
+        <button class="voice-play-btn" onclick="playVoice(this, ${m.time})">▶</button>
+        <div class="voice-wave">${barsHtml}</div>
+        <span class="voice-time">${formatDuration(duration)}</span>
+      </div>
+      <div class="msg-time">${formatTime(m.time)}</div>
+    `;
+  } else {
+    el.innerHTML = `${senderHtml}${escapeHtml(m.text)}<div class="msg-time">${formatTime(m.time)}</div>`;
+  }
+  return el;
+}
+function playVoice(btn, time) {
+  const msg = chats[currentChatId]?.messages.find(m => m.time === time && m.isVoice);
+  if (!msg || !msg.voiceData) { btn.textContent = '🔇'; setTimeout(() => btn.textContent = '▶', 1500); return; }
+  try {
+    const audio = new Audio(msg.voiceData);
+    btn.textContent = '⏸';
+    audio.play();
+    audio.onended = () => btn.textContent = '▶';
+    audio.onerror = () => btn.textContent = '▶';
+  } catch(e) { btn.textContent = '▶'; }
+}
+function addMessage(chatId, from, text, isSticker = false, isVoice = false, voiceData = null, voiceDuration = null, senderName = null, senderPhone = null, isSystem = false) {
+  if (!chats[chatId]) chats[chatId] = { messages: [], unread: 0 };
+  const msg = { from, text, time: Date.now(), isSticker, isVoice, voiceData, voiceDuration, senderName, senderPhone, isSystem };
+  chats[chatId].messages.push(msg);
+  saveChats();
+  if (currentChatId === chatId) {
+    const box = document.getElementById('messages');
+    const isGroup = !!groups[chatId];
+    box.appendChild(renderMessageElement(msg, isGroup));
+    scrollToBottom();
+  }
+}
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !currentChatId) return;
+  const contact = contacts[currentChatId];
+  if (contact && contact.blocked) { showToast("🚫 Пользователь заблокирован", true); return; }
+  input.value = '';
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  const isGroup = !!groups[currentChatId];
+  
+  if (isBot) {
+    addMessage(currentChatId, 'user', text);
+    playSendSound();
+    const bot = BOTS.find(b => b.id === currentChatId);
+    showTyping();
+    let reply = null;
+    if (bot.isAI) reply = await askAI(bot.aiStyle, text, bot.id);
+    if (!reply) reply = bot.replies[Math.floor(Math.random() * bot.replies.length)];
+    hideTyping();
+    addMessage(currentChatId, 'bot', reply);
+    playNotificationSound();
+  } else if (isGroup) {
+    addMessage(currentChatId, 'user', text, false, false, null, null, currentUser.name, currentUser.phone);
+    playSendSound();
+    if (firebaseReady && db) {
+      db.ref('group_messages/' + currentChatId).push({
+        from: currentUser.phone, fromName: currentUser.name,
+        text, time: Date.now(), isSticker: false, isVoice: false
+      });
+    }
+  } else {
+    addMessage(currentChatId, 'user', text);
+    playSendSound();
+    if (firebaseReady && db && contact) {
+      const myPhoneKey = encodeURIComponent(contact.phone);
+      db.ref('messages/' + myPhoneKey).push({
+        from: currentUser.phone, fromName: currentUser.name,
+        fromAvatar: currentUser.avatarEmoji || "👤",
+        fromAvatarImage: currentUser.avatarImage || null,
+        text, time: Date.now(), isSticker: false, isVoice: false
+      });
+    }
+  }
+}
+function toggleStickers() {
+  const sp = document.getElementById('stickerPanel');
+  sp.classList.toggle('show');
+  if (sp.classList.contains('show')) scrollToBottom();
+}
+function sendSticker(emoji) {
+  if (!currentChatId) return;
+  const contact = contacts[currentChatId];
+  if (contact && contact.blocked) { showToast("🚫 Заблокирован", true); return; }
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  const isGroup = !!groups[currentChatId];
+  addMessage(currentChatId, 'user', emoji, true);
+  playSendSound();
+  document.getElementById('stickerPanel').classList.remove('show');
+  if (isBot) {
+    const bot = BOTS.find(b => b.id === currentChatId);
+    setTimeout(() => {
+      if (Math.random() < 0.4) {
+        const botStickers = ["😀","😂","👍","❤️","🔥","✨","🎉","😎"];
+        addMessage(currentChatId, 'bot', botStickers[Math.floor(Math.random() * botStickers.length)], true);
+      } else {
+        addMessage(currentChatId, 'bot', bot.replies[Math.floor(Math.random() * bot.replies.length)]);
+      }
+      playNotificationSound();
+    }, 600 + Math.random() * 600);
+  } else if (isGroup) {
+    if (firebaseReady && db) {
+      db.ref('group_messages/' + currentChatId).push({
+        from: currentUser.phone, fromName: currentUser.name,
+        text: emoji, time: Date.now(), isSticker: true, isVoice: false
+      });
+    }
+  } else if (firebaseReady && db && contact) {
+    const myPhoneKey = encodeURIComponent(contact.phone);
+    db.ref('messages/' + myPhoneKey).push({
+      from: currentUser.phone, fromName: currentUser.name,
+      fromAvatar: currentUser.avatarEmoji || "👤",
+      fromAvatarImage: currentUser.avatarImage || null,
+      text: emoji, time: Date.now(), isSticker: true, isVoice: false
+    });
+  }
+}
+function showTyping() {
+  const box = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'typing-indicator';
+  el.id = 'typingIndicator';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  box.appendChild(el);
+  scrollToBottom();
+  const st = document.getElementById('chatStatus');
+  st.textContent = 'печатает...';
+  st.className = 'typing';
+}
+function hideTyping() {
+  document.getElementById('typingIndicator')?.remove();
+  updateCurrentChatStatus();
+}
+function scrollToBottom() {
+  setTimeout(() => {
+    const box = document.getElementById('messages');
+    if (box) box.scrollTop = box.scrollHeight;
+  }, 50);
+}
+async function toggleRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') stopRecordingAndSend();
+  else await startRecording();
+}
+async function startRecording() {
+  try {
+    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) { alert("Нужен доступ к микрофону"); return; }
+  audioChunks = [];
+  recordingCancelled = false;
+  try { mediaRecorder = new MediaRecorder(recordingStream); }
+  catch(e) { alert("Не поддерживается"); recordingStream.getTracks().forEach(t => t.stop()); return; }
+  mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.start();
+  recordingStartTime = Date.now();
+  document.getElementById('voiceBtn').classList.add('recording');
+  document.getElementById('voiceBtn').textContent = '⏹';
+  document.getElementById('recordingBar').classList.add('show');
+  recordingTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - recordingStartTime) / 1000);
+    document.getElementById('recordingTime').textContent = formatDuration(sec);
+    if (sec >= 20) stopRecordingAndSend();
+  }, 100);
+}
+function stopRecordingAndSend() {
+  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+  const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+  mediaRecorder.onstop = async () => {
+    if (recordingCancelled) { cleanupRecording(); return; }
+    if (duration < 1) { alert("Слишком коротко"); cleanupRecording(); return; }
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    if (blob.size > 400 * 1024) { alert("Слишком длинное"); cleanupRecording(); return; }
+    const reader = new FileReader();
+    reader.onload = () => { sendVoiceMessage(duration, reader.result); cleanupRecording(); };
+    reader.readAsDataURL(blob);
+  };
+  mediaRecorder.stop();
+}
+function cancelRecording() {
+  recordingCancelled = true;
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  cleanupRecording();
+}
+function cleanupRecording() {
+  if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+  if (recordingStream) { recordingStream.getTracks().forEach(t => t.stop()); recordingStream = null; }
+  mediaRecorder = null; audioChunks = []; recordingStartTime = null;
+  const btn = document.getElementById('voiceBtn');
+  if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+  document.getElementById('recordingBar')?.classList.remove('show');
+}
+async function sendVoiceMessage(duration, voiceData) {
+  if (!currentChatId) return;
+  const contact = contacts[currentChatId];
+  if (contact && contact.blocked) { showToast("🚫 Заблокирован", true); return; }
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  const isGroup = !!groups[currentChatId];
+  addMessage(currentChatId, 'user', `Голосовое (${formatDuration(duration)})`, false, true, voiceData, duration);
+  playSendSound();
+  if (isBot) {
+    const bot = BOTS.find(b => b.id === currentChatId);
+    setTimeout(() => {
+      showTyping();
+      setTimeout(async () => {
+        hideTyping();
+        let reply = bot.isAI ? await askAI(bot.aiStyle, "[Голосовое]", bot.id) : null;
+        if (!reply) reply = "Слышу тебя! 🎤";
+        addMessage(currentChatId, 'bot', reply);
+        playNotificationSound();
+      }, 1000);
+    }, 400);
+  } else if (isGroup) {
+    if (firebaseReady && db) {
+      db.ref('group_messages/' + currentChatId).push({
+        from: currentUser.phone, fromName: currentUser.name,
+        text: `Голосовое (${formatDuration(duration)})`,
+        isVoice: true, voiceData, voiceDuration: duration, time: Date.now()
+      });
+    }
+  } else if (firebaseReady && db && contact) {
+    const myPhoneKey = encodeURIComponent(contact.phone);
+    db.ref('messages/' + myPhoneKey).push({
+      from: currentUser.phone, fromName: currentUser.name,
+      fromAvatar: currentUser.avatarEmoji || "👤",
+      fromAvatarImage: currentUser.avatarImage || null,
+      text: `Голосовое (${formatDuration(duration)})`,
+      isVoice: true, voiceData, voiceDuration: duration, time: Date.now()
+    });
+  }
+}
+
+function openAddContact() {
+  document.getElementById('addContactModal').classList.add('show');
+  document.getElementById('contactPhone').value = "";
+  document.getElementById('contactMsg').value = "Привет! 👋";
+  document.getElementById('contactError').textContent = "";
+}
+function closeAddContact() { document.getElementById('addContactModal').classList.remove('show'); }
+async function sendByNumber() {
+  const phoneRaw = document.getElementById('contactPhone').value.trim();
+  const text = document.getElementById('contactMsg').value.trim();
+  const err = document.getElementById('contactError');
+  if (phoneRaw.length < 6) { err.textContent = "Введите номер"; return; }
+  if (text.length < 1) { err.textContent = "Введите сообщение"; return; }
+  const phone = phoneRaw.replace(/\s+/g, ' ').trim();
+  if (phone === currentUser.phone) { err.textContent = "Это ваш номер"; return; }
+  if (!firebaseReady) { err.textContent = "Firebase не подключён"; return; }
+  err.textContent = "Проверяем...";
+  try {
+    const phoneKey = encodeURIComponent(phone);
+    const snapshot = await db.ref('users/' + phoneKey).once('value');
+    const targetUser = snapshot.val();
+    if (!targetUser) { err.textContent = "Пользователь не найден"; return; }
+    err.textContent = "";
+    if (!contacts[phone]) {
+      contacts[phone] = {
+        phone, name: targetUser.name,
+        avatarEmoji: targetUser.avatarEmoji || "👤",
+        avatarImage: targetUser.avatarImage || null
+      };
+      saveContacts();
+    }
+    if (!chats[phone]) chats[phone] = { messages: [], unread: 0, type: 'user' };
+    addMessage(phone, 'user', text);
+    playSendSound();
+    await db.ref('messages/' + phoneKey).push({
+      from: currentUser.phone, fromName: currentUser.name,
+      fromAvatar: currentUser.avatarEmoji || "👤",
+      fromAvatarImage: currentUser.avatarImage || null,
+      text, time: Date.now(), isSticker: false, isVoice: false
+    });
+    closeAddContact();
+    switchTab('users');
+    renderChatList();
+    openChat(phone);
+  } catch(e) {
+    console.error(e);
+    err.textContent = "Ошибка: " + e.message;
+  }
+}
+
+function openCreateGroup() {
+  groupMembers = [];
+  groupMembersData = {};
+  document.getElementById('groupName').value = "";
+  document.getElementById('groupPhoneInput').value = "";
+  document.getElementById('groupError').textContent = "";
+  document.getElementById('selectedMembers').innerHTML = "";
+  document.getElementById('memberCount').textContent = "0";
+  renderMemberList();
+  document.getElementById('createGroupModal').classList.add('show');
+}
+function closeCreateGroup() { document.getElementById('createGroupModal').classList.remove('show'); }
+function renderMemberList() {
+  const list = document.getElementById('memberList');
+  list.innerHTML = '';
+  const available = Object.keys(contacts).filter(p => !groupMembers.includes(p));
+  if (available.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:13px;">Нет доступных контактов</div>';
+    return;
+  }
+  available.forEach(phone => {
+    const c = contacts[phone];
+    const item = document.createElement('div');
+    item.className = 'member-item';
+    item.onclick = () => addMember(phone);
+    const av = c.avatarImage ? `<img src="${c.avatarImage}">` : (c.avatarEmoji || "👤");
+    item.innerHTML = `
+      <div class="member-avatar">${av}</div>
+      <div class="member-name">${escapeHtml(c.name)}<div class="member-phone">${escapeHtml(c.phone)}</div></div>
+      <div class="check">➕</div>
+    `;
+    list.appendChild(item);
+  });
+}
+function addMember(phone) {
+  if (groupMembers.length >= MAX_GROUP_MEMBERS) { showToast("Максимум 50", true); return; }
+  if (groupMembers.includes(phone)) return;
+  const c = contacts[phone];
+  if (!c) return;
+  groupMembers.push(phone);
+  groupMembersData[phone] = { phone, name: c.name, avatarEmoji: c.avatarEmoji, avatarImage: c.avatarImage };
+  renderSelectedMembers();
+  renderMemberList();
+}
+async function addMemberByPhone() {
+  const input = document.getElementById('groupPhoneInput');
+  const phone = input.value.replace(/\s+/g, ' ').trim();
+  const err = document.getElementById('groupError');
+  if (!phone || phone.length < 6) { err.textContent = "Введите номер"; return; }
+  if (phone === currentUser.phone) { err.textContent = "Это ваш номер"; return; }
+  if (groupMembers.includes(phone)) { err.textContent = "Уже добавлен"; return; }
+  if (groupMembers.length >= MAX_GROUP_MEMBERS) { err.textContent = "Максимум 50"; return; }
+  const phoneKey = encodeURIComponent(phone);
+  const snapshot = await db.ref('users/' + phoneKey).once('value');
+  const u = snapshot.val();
+  if (!u) { err.textContent = "Пользователь не найден"; return; }
+  err.textContent = "";
+  groupMembers.push(phone);
+  groupMembersData[phone] = { phone, name: u.name, avatarEmoji: u.avatarEmoji || "👤", avatarImage: u.avatarImage || null };
+  if (!contacts[phone]) {
+    contacts[phone] = { phone, name: u.name, avatarEmoji: u.avatarEmoji || "👤", avatarImage: u.avatarImage || null };
+    saveContacts();
+  }
+  input.value = "";
+  renderSelectedMembers();
+  renderMemberList();
+}
+function removeMember(phone) {
+  groupMembers = groupMembers.filter(p => p !== phone);
+  delete groupMembersData[phone];
+  renderSelectedMembers();
+  renderMemberList();
+}
+function renderSelectedMembers() {
+  const box = document.getElementById('selectedMembers');
+  box.innerHTML = '';
+  document.getElementById('memberCount').textContent = groupMembers.length;
+  groupMembers.forEach(phone => {
+    const data = groupMembersData[phone];
+    const chip = document.createElement('div');
+    chip.className = 'member-chip';
+    chip.innerHTML = `<span>${escapeHtml(data.name)}</span><button onclick="removeMember('${phone.replace(/'/g, "\\'")}')">✕</button>`;
+    box.appendChild(chip);
+  });
+}
+async function createGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  const err = document.getElementById('groupError');
+  if (name.length < 2) { err.textContent = "Введите название"; return; }
+  if (groupMembers.length < 1) { err.textContent = "Добавьте участников"; return; }
+  if (!firebaseReady) { err.textContent = "Firebase не подключён"; return; }
+  err.textContent = "Создаём...";
+  try {
+    const groupId = 'group_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const allMembers = [currentUser.phone, ...groupMembers];
+    const membersData = {
+      [currentUser.phone]: {
+        phone: currentUser.phone, name: currentUser.name,
+        avatarEmoji: currentUser.avatarEmoji, avatarImage: currentUser.avatarImage
+      },
+      ...groupMembersData
+    };
+    await db.ref('groups/' + groupId).set({
+      id: groupId, name, emoji: "👥", members: allMembers, membersData,
+      creator: currentUser.phone, createdAt: Date.now()
+    });
+    for (const phone of allMembers) {
+      const phoneKey = encodeURIComponent(phone);
+      await db.ref('user_groups/' + phoneKey + '/' + groupId).set({
+        groupId, name, emoji: "👥", members: allMembers, createdAt: Date.now()
+      });
+    }
+    groups[groupId] = { id: groupId, name, emoji: "👥", members: allMembers, membersData, createdAt: Date.now() };
+    chats[groupId] = { messages: [], unread: 0, type: 'group' };
+    saveGroups(); saveChats();
+    subscribeToGroup(groupId);
+    closeCreateGroup();
+    switchTab('groups');
+    renderChatList();
+    showToast("✅ Группа создана!");
+    openChat(groupId);
+  } catch(e) {
+    console.error(e);
+    err.textContent = "Ошибка: " + e.message;
+  }
+}
+
+function toggleSettingsPanel() {
+  const panel = document.getElementById('settingsPanel');
+  if (panel.classList.contains('show')) panel.classList.remove('show');
+  else openSettingsPanel();
+}
+function openSettingsPanel() {
+  if (!currentUser) return;
+  settingsSelectedAvatar = currentUser.avatarEmoji || "😀";
+  settingsCustomAvatarData = currentUser.avatarImage || null;
+  renderSettingsAvatar();
+  document.getElementById('settingsNameInput').value = currentUser.name || "";
+  const grid = document.getElementById('settingsAvatarGrid');
+  grid.innerHTML = '';
+  AVATARS.forEach(emoji => {
+    const el = document.createElement('div');
+    el.className = 'avatar-option' + (emoji === settingsSelectedAvatar && !settingsCustomAvatarData ? ' selected' : '');
+    el.textContent = emoji;
+    el.onclick = () => {
+      document.querySelectorAll('#settingsAvatarGrid .avatar-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      settingsSelectedAvatar = emoji;
+      settingsCustomAvatarData = null;
+      renderSettingsAvatar();
+    };
+    grid.appendChild(el);
+  });
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+  });
+  renderBgGrid();
+  loadNeuroHamSetting();
+  const toggle = document.getElementById('neurohamToggle');
+  const warning = document.getElementById('adultWarning');
+  if (toggle) toggle.checked = neurohamEnabled;
+  if (warning) warning.style.display = neurohamEnabled ? 'block' : 'none';
+  document.getElementById('settingsError').textContent = "";
+  document.getElementById('settingsPanel').classList.add('show');
+}
+function renderSettingsAvatar() {
+  const preview = document.getElementById('settingsAvatarPreview');
+  if (settingsCustomAvatarData) preview.innerHTML = `<img src="${settingsCustomAvatarData}">`;
+  else preview.innerHTML = `<span class="emoji-av">${settingsSelectedAvatar || '😀'}</span>`;
+}
+function settingsUploadAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert("Выберите изображение"); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const SIZE = 150;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, SIZE, SIZE);
+      settingsCustomAvatarData = canvas.toDataURL('image/jpeg', 0.7);
+      settingsSelectedAvatar = null;
+      document.querySelectorAll('#settingsAvatarGrid .avatar-option').forEach(o => o.classList.remove('selected'));
+      renderSettingsAvatar();
+      event.target.value = "";
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function saveSettings() {
+  const name = document.getElementById('settingsNameInput').value.trim();
+  const err = document.getElementById('settingsError');
+  if (name.length < 2) { err.textContent = "Введите имя"; return; }
+  err.textContent = "";
+  showLoading("Сохраняем...");
+  setTimeout(async () => {
+    try {
+      currentUser = {
+        ...currentUser, name,
+        avatarEmoji: settingsCustomAvatarData ? null : settingsSelectedAvatar,
+        avatarImage: settingsCustomAvatarData,
+        updatedAt: Date.now()
+      };
+      safeSave('naki_user', currentUser);
+      if (firebaseReady && db) await registerOnFirebase();
+      hideLoading();
+      showMain();
+      document.getElementById('settingsPanel').classList.remove('show');
+      showToast("✅ Профиль обновлён!");
+    } catch(e) {
+      console.error(e);
+      hideLoading();
+      err.textContent = "Ошибка: " + e.message;
+    }
+  }, 300);
+}
+
+function openPeerProfile() {
+  if (!currentChatId) return;
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  const isGroup = !!groups[currentChatId];
+  const bot = BOTS.find(b => b.id === currentChatId);
+  const group = groups[currentChatId];
+  const contact = contacts[currentChatId];
+  ['peerRenameBtn','peerAddGroupBtn','blockBtn'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  if (isBot) {
+    document.getElementById('peerAvatar').textContent = bot.emoji;
+    const nameEl = document.getElementById('peerName');
+    if (bot.isVerified) nameEl.innerHTML = `${escapeHtml(bot.name)} <span class="verified-badge-large"></span>`;
+    else nameEl.textContent = bot.name;
+    if (bot.id === 'neuroham') {
+      document.getElementById('peerPhone').textContent = 'Умный как Grok • матерится (зацензурено) 🤬';
+    } else {
+      document.getElementById('peerPhone').textContent = 'ИИ-ассистент • верифицирован';
+    }
+  } else if (isGroup) {
+    document.getElementById('peerAvatar').textContent = group.emoji || '👥';
+    document.getElementById('peerName').textContent = group.name;
+    document.getElementById('peerPhone').textContent = `${group.members.length} участников`;
+  } else if (contact) {
+    peerProfilePhone = currentChatId;
+    const av = document.getElementById('peerAvatar');
+    if (contact.avatarImage) av.innerHTML = `<img src="${contact.avatarImage}" style="width:100%;height:100%;object-fit:cover;">`;
+    else av.textContent = contact.avatarEmoji || "👤";
+    document.getElementById('peerName').textContent = contact.name;
+    document.getElementById('peerPhone').textContent = contact.phone;
+    document.getElementById('peerRenameBtn').style.display = 'block';
+    document.getElementById('peerAddGroupBtn').style.display = 'block';
+    document.getElementById('blockBtn').style.display = 'block';
+    const blockBtn = document.getElementById('blockBtn');
+    const isBlocked = contact.blocked || false;
+    blockBtn.textContent = isBlocked ? '✅ Разблокировать' : '🚫 Заблокировать';
+    blockBtn.style.background = isBlocked ? '#dcfce7' : '#f0f0f5';
+    blockBtn.style.color = isBlocked ? '#16a34a' : '#555';
+  }
+  document.getElementById('peerProfileModal').classList.add('show');
+}
+function closePeerProfile() {
+  document.getElementById('peerProfileModal').classList.remove('show');
+  peerProfilePhone = null;
+}
+function renamePeer() {
+  if (!peerProfilePhone) return;
+  const contact = contacts[peerProfilePhone];
+  if (!contact) return;
+  document.getElementById('renamePeerInput').value = contact.name;
+  document.getElementById('renamePeerError').textContent = "";
+  closePeerProfile();
+  document.getElementById('renamePeerModal').classList.add('show');
+  setTimeout(() => {
+    document.getElementById('renamePeerInput').focus();
+    document.getElementById('renamePeerInput').select();
+  }, 200);
+}
+function closeRenamePeer() { document.getElementById('renamePeerModal').classList.remove('show'); }
+function savePeerRename() {
+  if (!peerProfilePhone) return;
+  const name = document.getElementById('renamePeerInput').value.trim();
+  const err = document.getElementById('renamePeerError');
+  if (name.length < 1) { err.textContent = "Введите имя"; return; }
+  const contact = contacts[peerProfilePhone];
+  if (!contact) return;
+  contact.name = name;
+  saveContacts();
+  closeRenamePeer();
+  renderChatList();
+  if (currentChatId === peerProfilePhone) document.getElementById('chatTitle').textContent = name;
+  showToast("✅ Переименовано");
+}
+function toggleBlockPeer() {
+  if (!peerProfilePhone) return;
+  const contact = contacts[peerProfilePhone];
+  if (!contact) return;
+  const wasBlocked = contact.blocked || false;
+  if (wasBlocked) {
+    delete contact.blocked;
+    showToast("✅ Разблокирован");
+  } else {
+    if (!confirm(`Заблокировать ${contact.name}?`)) return;
+    contact.blocked = true;
+    showToast("🚫 Заблокирован");
+  }
+  saveContacts();
+  closePeerProfile();
+  renderChatList();
+  updateChatHeaderBlockState();
+}
+function quickUnblock() {
+  if (!currentChatId) return;
+  const contact = contacts[currentChatId];
+  if (!contact || !contact.blocked) return;
+  if (!confirm(`Разблокировать ${contact.name}?`)) return;
+  delete contact.blocked;
+  saveContacts();
+  updateChatHeaderBlockState();
+  renderChatList();
+  updateCurrentChatStatus();
+  showToast("✅ Пользователь разблокирован");
+}
+function addPeerToGroup() {
+  if (!peerProfilePhone) return;
+  const list = document.getElementById('groupsToAddList');
+  list.innerHTML = '';
+  const myGroups = Object.keys(groups);
+  if (myGroups.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:13px;">У тебя ещё нет групп</div>';
+  } else {
+    myGroups.forEach(gid => {
+      const g = groups[gid];
+      const alreadyMember = g.members.includes(peerProfilePhone);
+      const item = document.createElement('div');
+      item.className = 'member-item';
+      if (alreadyMember) item.style.opacity = '0.5';
+      else item.onclick = () => doAddToGroup(gid);
+      item.innerHTML = `
+        <div class="member-avatar">${g.emoji || '👥'}</div>
+        <div class="member-name">${escapeHtml(g.name)}<div class="member-phone">${g.members.length} участников</div></div>
+        <div class="check">${alreadyMember ? '✅' : '➕'}</div>
+      `;
+      list.appendChild(item);
+    });
+  }
+  document.getElementById('addToGroupError').textContent = "";
+  closePeerProfile();
+  document.getElementById('addToGroupModal').classList.add('show');
+}
+function closeAddToGroup() { document.getElementById('addToGroupModal').classList.remove('show'); }
+async function doAddToGroup(groupId) {
+  if (!peerProfilePhone) return;
+  const group = groups[groupId];
+  if (!group) return;
+  if (group.members.includes(peerProfilePhone)) {
+    document.getElementById('addToGroupError').textContent = "Уже в группе";
+    return;
+  }
+  if (group.members.length >= MAX_GROUP_MEMBERS) {
+    document.getElementById('addToGroupError').textContent = "Группа заполнена";
+    return;
+  }
+  try {
+    const contact = contacts[peerProfilePhone];
+    group.members.push(peerProfilePhone);
+    if (!group.membersData) group.membersData = {};
+    group.membersData[peerProfilePhone] = {
+      phone: peerProfilePhone, name: contact.name,
+      avatarEmoji: contact.avatarEmoji, avatarImage: contact.avatarImage
+    };
+    saveGroups();
+    if (firebaseReady && db) {
+      await db.ref('groups/' + groupId + '/members').set(group.members);
+      await db.ref('groups/' + groupId + '/membersData/' + encodeURIComponent(peerProfilePhone)).set(group.membersData[peerProfilePhone]);
+      const phoneKey = encodeURIComponent(peerProfilePhone);
+      await db.ref('user_groups/' + phoneKey + '/' + groupId).set({
+        groupId, name: group.name, emoji: group.emoji || "👥",
+        members: group.members, createdAt: Date.now()
+      });
+      db.ref('group_messages/' + groupId).push({
+        from: 'system', fromName: 'Система',
+        text: `👥 ${contact.name} добавлен в группу`,
+        time: Date.now(), isSystem: true
+      });
+    }
+    closeAddToGroup();
+    showToast(`✅ ${contact.name} добавлен в "${group.name}"`);
+  } catch(e) {
+    console.error(e);
+    document.getElementById('addToGroupError').textContent = "Ошибка: " + e.message;
+  }
+}
+
+function startCall() {
+  if (!currentChatId) return;
+  const isBot = !!BOTS.find(b => b.id === currentChatId);
+  if (!isBot) { alert("Звонки только ботам"); return; }
+  const bot = BOTS.find(b => b.id === currentChatId);
+  callState = { bot, timerInterval: null, startTime: null, stage: 'calling' };
+  document.getElementById('callAvatar').textContent = bot.emoji;
+  document.getElementById('callName').innerHTML = `${escapeHtml(bot.name)}${bot.isVerified ? ' <span class="verified-badge" style="width:20px;height:20px;"></span>' : ''}`;
+  document.getElementById('callStatus').textContent = 'Вызов...';
+  document.getElementById('callTimer').textContent = '';
+  document.getElementById('callCaption').classList.remove('show');
+  document.getElementById('callCaption').textContent = '';
+  document.getElementById('callActions').innerHTML = `<button class="call-btn decline" onclick="endCall()">✕</button>`;
+  document.getElementById('callScreen').classList.add('active');
+  callState.answerTimeout = setTimeout(answerCall, 2000 + Math.random() * 2000);
+}
+function answerCall() {
+  if (!callState) return;
+  callState.stage = 'active';
+  callState.startTime = Date.now();
+  document.getElementById('callStatus').textContent = 'На связи';
+  document.getElementById('callActions').innerHTML = `<button class="call-btn end" onclick="endCall()">📞</button>`;
+  callState.timerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - callState.startTime) / 1000);
+    document.getElementById('callTimer').textContent = formatDuration(sec);
+  }, 1000);
+  setTimeout(() => speakBot(callState.bot.callGreeting), 400);
+  callState.replyInterval = setInterval(() => {
+    if (!callState || callState.stage !== 'active') return;
+    let phrase = callState.bot.replies[Math.floor(Math.random() * callState.bot.replies.length)];
+    if (callState.bot.id === 'neuroham') phrase = censorMats(phrase);
+    speakBot(phrase);
+  }, 8000 + Math.random() * 4000);
+}
+function speakBot(text) {
+  const cap = document.getElementById('callCaption');
+  cap.textContent = text;
+  cap.classList.add('show');
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ru-RU'; u.rate = 1; u.pitch = 1.1;
+      const voices = window.speechSynthesis.getVoices();
+      const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+      if (ruVoice) u.voice = ruVoice;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+}
+function endCall() {
+  if (!callState) return;
+  if (callState.answerTimeout) clearTimeout(callState.answerTimeout);
+  if (callState.timerInterval) clearInterval(callState.timerInterval);
+  if (callState.replyInterval) clearInterval(callState.replyInterval);
+  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
+  const bot = callState.bot;
+  const wasActive = callState.stage === 'active';
+  const duration = callState.startTime ? Math.floor((Date.now() - callState.startTime) / 1000) : 0;
+  callState = null;
+  document.getElementById('callScreen').classList.remove('active');
+  addMessage(bot.id, 'user', wasActive ? `📞 Звонок • ${formatDuration(duration)}` : `📞 Пропущенный звонок`);
+  setTimeout(() => {
+    const after = wasActive ? `Спасибо за звонок! 😊` : `Жаль, что не получилось поговорить.`;
+    addMessage(bot.id, 'bot', after);
+    playNotificationSound();
+  }, 700);
+}
+
+function logout() {
+  if (!confirm("Выйти из аккаунта?")) return;
+  goOffline();
+  fbListeners.forEach(l => { try { l.ref.off(l.event, l.handler); } catch(e) {} });
+  fbListeners = [];
+  localStorage.removeItem('naki_user');
+  currentUser = null; chats = {}; contacts = {}; groups = {};
+  currentChatId = null;
+  document.getElementById('phoneInput').value = "";
+  document.getElementById('nameInput').value = "";
+  document.getElementById('countrySelect').value = "0";
+  currentCountry = COUNTRIES[0];
+  updatePhonePlaceholder();
+  selectedAvatar = "😀"; customAvatarData = null;
+  renderAvatarPreview();
+  cleanupRecording();
+  document.getElementById('settingsPanel').classList.remove('show');
+  document.body.classList.remove('dark-theme');
+  showScreen('screenPhone');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+function formatDuration(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+</script>
+
+</body>
+</html>
